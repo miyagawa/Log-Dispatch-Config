@@ -99,7 +99,7 @@ will result to:
 
 Defines default logger for not confgured name. log4j has root for it.
 
-=cut
+=back
 
 =head1 AUTHOR
 
