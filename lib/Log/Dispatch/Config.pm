@@ -2,7 +2,7 @@ package Log::Dispatch::Config;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.10';
+$VERSION = '0.11';
 
 use Log::Dispatch;
 use base qw(Log::Dispatch);
@@ -133,9 +133,20 @@ sub format_to_cb {
  	}
 
 	my $log = $format;
-	$log =~ s/%d(?:{(.*?)})?/$1 ? _strftime($1) : scalar localtime/eg;
-	$log =~ s/%([%pmFLPn])/$p{$1}/g;
-
+	$log =~ s{
+	    (%d(?:{(.*?)})?)|	# $1: datetime $2: datetime fmt
+	    (?:%([%pmFLPn]))	# $3: others
+	}{
+	    if ($1 && $2) {
+		_strftime($2);
+	    }
+	    elsif ($1) {
+		scalar localtime;
+	    }
+	    elsif ($3) {
+		$p{$3};
+	    }
+	}egx;
 	return $log;
     };
 }

@@ -1,5 +1,8 @@
 Revision history for Perl extension Log::Dispatch::Config.
 
+0.11  Sun Jan  6 18:01:48 JST 2002
+	- format code now becomes one-way parser
+
 0.10  Thu Jan  3 11:12:40 JST 2002
 	- Fixed Y2002 bug :( in t/08_datetime.t
 	  (Thanks to Matt Sergeant <matt@sergeant.org>)
