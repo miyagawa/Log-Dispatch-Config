@@ -1,6 +1,9 @@
 Revision history for Perl extension Log::Dispatch::Config.
 
-0.06
+0.07
+
+
+0.06  Tue Dec 18 21:27:51 JST 2001
 	--- developer API change ---
 	* Added Log::Dispatch::Configurator and docs/tests for it
 	  (Thanks to Matt Sergeant <matt@sergeant.org>)
