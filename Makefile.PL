@@ -1,6 +1,6 @@
 use ExtUtils::MakeMaker;
 
-$LAST_API_CHANGE = 0.08;
+$LAST_API_CHANGE = 0.12;
 eval q{require Log::Dispatch::Config};
 unless ($@) {
     print <<WARN if ${Log::Dispatch::Config::VERSION} <= $LAST_API_CHANGE;

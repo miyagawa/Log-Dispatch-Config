@@ -2,22 +2,35 @@ package Log::Dispatch::Configurator;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = 0.01;
+$VERSION = 0.12;
 
 sub new {
     my($class, $file) = @_;
-    return bless { file => $file }, $class;
+    my $self = bless {
+	file   => $file,
+	_ctime => 0,
+	_watch => 0,
+    }, $class;
+    $self;
 }
+
+sub parse { }
 
 sub needs_reload {
-    my($self, $obj) = @_;
-    return $obj->{ctime} < (stat($self->{file}))[9];
+    my $self = shift;
+    return $self->{_ctime} < (stat($self->{file}))[9];
 }
 
-sub reload {
+sub conf_time {
     my $self = shift;
-    my $class = ref $self;
-    return $class->new($self->{file});
+    $self->{_ctime} = shift if @_;
+    $self->{_ctime};
+}
+
+sub should_watch {
+    my $self = shift;
+    $self->{_watch} = shift if @_;
+    return $self->{_watch};
 }
 
 sub _abstract_method {
@@ -45,8 +58,8 @@ Log::Dispatch::Configurator - Abstract Configurator class
   sub get_attrs        { }
 
   # optional
+  sub parse        { }
   sub needs_reload { }
-  sub reload       { }
 
 =head1 DESCRIPTION
 

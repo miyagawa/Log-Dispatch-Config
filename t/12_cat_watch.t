@@ -1,7 +1,7 @@
 use strict;
 use Test::More tests => 4;
 
-use Log::Dispatch::Config;
+use Log::Dispatch::Config::Category;
 use FileHandle;
 use File::Temp qw(tempfile);
 use IO::Scalar;
@@ -20,10 +20,10 @@ foo.min_level=debug
 CFG
     ;
 
-Log::Dispatch::Config->configure_and_watch($file);
+Log::Dispatch::Config::Category->configure_and_watch(Foo => $file);
 
 {
-    my $disp = Log::Dispatch::Config->instance;
+    my $disp = Log::Dispatch::Config::Category->instance('Foo');
     isa_ok $disp->{outputs}->{foo}, 'Log::Dispatch::File';
 
     sleep 1;
@@ -37,7 +37,7 @@ CFG
     ;
 
     local $^W;
-    my $disp2 = Log::Dispatch::Config->instance;
+    my $disp2 = Log::Dispatch::Config::Category->instance('Foo');
     isa_ok $disp2->{outputs}->{bar}, 'Log::Dispatch::File';
     is $disp2->{outputs}->{foo}, undef;
     isnt "$disp", "$disp2", "$disp - $disp2";

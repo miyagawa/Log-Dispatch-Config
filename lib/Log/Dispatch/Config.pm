@@ -2,14 +2,23 @@ package Log::Dispatch::Config;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.11';
+$VERSION = 0.12;
 
 use Log::Dispatch;
 use base qw(Log::Dispatch);
-use fields qw(config ctime);
+use fields qw(config);
 
 # caller depth: can be changed from outside
 $Log::Dispatch::Config::CallerDepth = 0;
+
+# accessor for symblic reference
+sub __instance {
+    my $class = shift;
+    no strict 'refs';
+    my $instance = "$class\::_instance";
+    $$instance = shift if @_;
+    return $$instance;
+}
 
 sub configure {
     my($class, $config) = @_;
@@ -21,9 +30,20 @@ sub configure {
 	$config = Log::Dispatch::Configurator::AppConfig->new($config);
     }
 
-    no strict 'refs';
-    my $instance = "$class\::_instance";
-    $$instance = $config;
+    # records conf time
+    $config->conf_time(time);
+    $class->__instance($config);
+}
+
+sub configure_and_watch {
+    my($class, $config) = @_;
+    $class->configure($config);
+
+    # hack: __instance should return conf
+    $config = $class->__instance;
+
+    # tells conf to watch config file
+    $config->should_watch(1);
 }
 
 # backward compatibility
@@ -34,39 +54,45 @@ sub Log::Dispatch::instance {
 sub instance {
     my $class = shift;
 
-    no strict 'refs';
-    my $instance = "$class\::_instance";
-    unless (defined $$instance) {
+    my $instance = $class->__instance;
+    unless (defined $instance) {
 	require Carp;
 	Carp::croak("Log::Dispatch::Config->configure not yet called.");
     }
 
-    if (UNIVERSAL::isa($$instance, 'Log::Dispatch::Config')) {
+    if (UNIVERSAL::isa($instance, 'Log::Dispatch::Config')) {
         # reload singleton on the fly
-	if ($$instance->needs_reload) {
-	    $$instance = $$instance->reload;
+	if ($instance->needs_reload) {
+	    $class->reload;
 	}
     }
     else {
         # first time call: $_instance is L::D::Configurator::*
-	$$instance = $class->create_instance($$instance);
+	$class->__instance($class->create_instance($instance));
     }
-    return $$instance;
+    return $class->__instance;
 }
 
 sub needs_reload {
     my $self = shift;
-    return $self->{config}->needs_reload($self);
+    return $self->{config}->should_watch && $self->{config}->needs_reload;
 }
 
 sub reload {
-    my $self = shift;
-    my $class = ref $self;
-    return $class->create_instance($self->{config}->reload);
+    my $proto = shift;
+    my $class = ref $proto || $proto;
+    my $instance = $class->__instance;
+
+    # reconfigure, and returns instance
+    my $meth = $instance->{config}->should_watch
+	? \&configure_and_watch : \&configure;
+    $class->$meth($instance->{config});
+    $class->__instance($class->instance);
 }
 
 sub create_instance {
     my($class, $config) = @_;
+    $config->parse;
 
     my $global = $config->get_attrs_global;
     my $callback = $class->format_to_cb($global->{format}, 0);
@@ -92,7 +118,6 @@ sub create_instance {
 
     # config info
     $instance->{config} = $config;
-    $instance->{ctime} = time;
 
     return $instance;
 }
@@ -176,20 +201,20 @@ Log::Dispatch::Config - Log4j for Perl
 =head1 SYNOPSIS
 
   use Log::Dispatch::Config;
-  Log::Dispatch::Config->configure('/path/to/config');
+  Log::Dispatch::Config->configure('/path/to/log.conf');
 
   my $dispatcher = Log::Dispatch::Config->instance;
   $dispatcher->debug('this is debug message');
   $dispatcher->emergency('something *bad* happened!');
-
-  # or the same
-  my $dispatcher = Log::Dispatch->instance;
 
   # or if you write your own config parser:
   use Log::Dispatch::Configurator::XMLSimple;
 
   my $config = Log::Dispatch::Configurator::XMLSimple->new('log.xml');
   Log::Dispatch::Config->configure($config);
+
+  # automatic reloading conf file, when modified
+  Log::Dispatch::Config->configure_and_watch('/path/to/log.conf');
 
 =head1 DESCRIPTION
 
@@ -338,9 +363,10 @@ returning same object.
 See GoF Design Pattern book for Singleton Pattern.
 
 But in practice, in persistent environment like mod_perl, Singleton
-instance is not so useful. Log::Dispatch::Config defines C<instance>
-method so that the object reloads itself when configuration file is
-modified since its last object creation time.
+instance becomes sometimes messy. If you call C<configure_and_watch>
+method on Log::Dispatch::Config instead of C<configure>, C<instance>
+call will reload the singleton object when configuration file is
+modified since its last configuration time.
 
 =head1 PLUGGABLE CONFIGURATOR
 
@@ -355,15 +381,10 @@ hardwired version equivalent to the one above in L</"CONFIGURATION">.
 
 =item *
 
-Inherit from Log::Dispatch::Configurator. Stub C<new> constructor is
-inherited, but you can roll your own with it.
+Inherit from Log::Dispatch::Configurator.
 
   package Log::Dispatch::Configurator::Hardwired;
   use base qw(Log::Dispatch::Configurator);
-
-  sub new {
-      bless {}, shift;
-  }
 
 =item *
 
@@ -410,10 +431,10 @@ reference of parameters associated with the dispatcher.
 
 =item *
 
-Implement optional C<needs_reload> and C<reload>
-methods. C<needs_reload> accepts Log::Dispatch::Config instance and
-should return boolean value if the object is stale and needs reloading
-itself.
+Implement optional C<needs_reload> and C<parse>
+methods. C<needs_reload> should return boolean value if the object is
+stale and needs reloading itself. This method will be triggered when
+you configure logging object with C<configure_and_watch> method.
 
 Stub config file mtime based C<needs_reload> method is declared in
 Log::Dispatch::Configurator as below, so if your config class is based
@@ -424,21 +445,14 @@ on filesystem files, you do not need to reimplement this.
       return $obj->{ctime} < (stat($self->{file}))[9];
   }
 
-If you do not need I<singleton-ness>, always return true.
+If you do not need I<singleton-ness at all>, always return true.
 
   sub needs_reload { 1 }
 
-C<reload> method is called when C<needs_reload> returns true, and
-should return new Configurator instance. Typically you should place
-configuration parsing again on this method, so
-Log::Dispatch::Configurator again declares stub C<reload> method that
-clones your object.
-
-  sub reload {
-      my $self = shift;
-      my $class = ref $self;
-      return $class->new($self->{file});
-  }
+C<parse> method should do parsing of the config file. This method is
+called in the first parsing of the config file, and again when
+C<needs_reload> returns true. Log::Dispatch::Configurator base class
+has a null C<parse> method.
 
 =item *
 
@@ -480,7 +494,7 @@ to increase the caller stack depth. The default value is 0.
       $Logger->$level($msg);
   }
 
-Note that your log caller's namespace should not begin with
+Note that your log caller's namespace should not match against
 C</^Log::Dispatch/>, which makes this module confusing.
 
 =head1 AUTHOR
@@ -493,6 +507,8 @@ it under the same terms as Perl itself.
 
 =head1 SEE ALSO
 
-L<Log::Dispatch::Configurator::AppConfig>, L<Log::Dispatch>, L<AppConfig>
+L<Log::Dispatch::Config::Category>,
+L<Log::Dispatch::Configurator::AppConfig>, L<Log::Dispatch>,
+L<AppConfig>, L<POE::Component::Logger>
 
 =cut

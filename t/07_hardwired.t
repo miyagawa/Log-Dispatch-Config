@@ -7,8 +7,6 @@ END { unlink 't/log.out' if -e 't/log.out' }
     package Log::Dispatch::Configurator::Hardwired;
     use base qw(Log::Dispatch::Configurator);
 
-    sub new { bless {}, shift; }
-
     sub get_attrs_global {
 	my $self = shift;
 	return {
@@ -39,11 +37,6 @@ END { unlink 't/log.out' if -e 't/log.out' }
 
     # every time it needs reload
     sub needs_reload { 1 }
-
-    sub reload {
-	my $self = shift;
-	bless {}, ref $self;
-    }
 }
 
 use Log::Dispatch::Config;
@@ -52,7 +45,7 @@ my $config = Log::Dispatch::Configurator::Hardwired->new;
 isa_ok $config, 'Log::Dispatch::Configurator';
 isa_ok $config, 'Log::Dispatch::Configurator::Hardwired';
 
-Log::Dispatch::Config->configure($config);
+Log::Dispatch::Config->configure_and_watch($config);
 
 my $disp = Log::Dispatch::Config->instance;
 isa_ok $disp->{outputs}->{file}, 'Log::Dispatch::File';
