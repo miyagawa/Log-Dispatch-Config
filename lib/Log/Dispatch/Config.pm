@@ -130,10 +130,8 @@ sub format_to_cb {
 
 	# caller() might be slow
 	if ($needs_caller) {
-	    my $depth = $Log$
-	    my $depth = Revision 1.15  2001/12/18 16:46:39  miyagawa
-	    my $depth = caller stack
-	    my $depth =stack;
+	    my $depth = $Log::Dispatch::Config::CallerDepth
+		+ $stack;
 	    @p{qw(package filename line)} = caller($depth);
 	}
 
