@@ -22,24 +22,25 @@ sub __instance {
     return $$instance;
 }
 
-sub configure {
-    my($class, $config) = @_;
-    _croak "no config file or configurator supplied" unless $config;
+sub _configurator_for {
+    my($class, $stuff) = @_;
+    return $stuff if UNIVERSAL::isa($stuff, 'Log::Dispatch::Configurator');
+    require Log::Dispatch::Configurator::AppConfig;
+    return Log::Dispatch::Configurator::AppConfig->new($stuff);
+}
 
-    # default configurator: AppConfig
-    unless (UNIVERSAL::isa($config, 'Log::Dispatch::Configurator')) {
-	require Log::Dispatch::Configurator::AppConfig;
-	$config = Log::Dispatch::Configurator::AppConfig->new($config);
-    }
+sub configure {
+    my($class, $stuff) = @_;
+    _croak "no config file or configurator supplied" unless $stuff;
+    my $config = $class->_configurator_for($stuff);
     $config->myinit;
     $class->__instance($config);
 }
 
 sub configure_and_watch {
-    my($class, $config) = @_;
-    $class->configure($config);
-    $config = $class->__instance; # XXX: __instance is now config
-    $config->should_watch(1);	# tells conf to watch config file
+    my $class = shift;
+    $class->configure(@_);
+    $class->__instance->should_watch(1); # tells conf to watch config file
 }
 
 # backward compatibility
@@ -48,8 +49,8 @@ sub Log::Dispatch::instance { __PACKAGE__->instance; }
 sub instance {
     my $class = shift;
 
-    my $instance = $class->__instance or _croak "Log::Dispatch::Config->configure not yet called.";
-    if (UNIVERSAL::isa($instance, 'Log::Dispatch::Config')) {
+    my $instance = $class->__instance or _croak "configure not yet called.";
+    if ($instance->isa('Log::Dispatch::Config')) {
         # reload singleton on the fly
 	$class->reload if $instance->needs_reload;
     }
@@ -99,20 +100,17 @@ sub create_instance {
 	);
     }
 
-    # config info
     $instance->{config} = $config;
-
     return $instance;
 }
 
 sub config_dispatcher {
     my($class, $disp, $var) = @_;
 
-    my $dispclass = $var->{class}
-        or die "class param missing for $disp";
+    my $dispclass = $var->{class} or _croak "class param missing for $disp";
 
     eval qq{require $dispclass};
-    die $@ if $@ && $@ !~ /locate/;
+    _croak $@ if $@ && $@ !~ /locate/;
 
     if (exists $var->{format}) {
         $var->{callbacks} = $class->format_to_cb(delete $var->{format}, 2);
@@ -442,13 +440,8 @@ stale and needs reloading itself. This method will be triggered when
 you configure logging object with C<configure_and_watch> method.
 
 Stub config file mtime based C<needs_reload> method is declared in
-Log::Dispatch::Configurator as below, so if your config class is based
-on filesystem files, you do not need to reimplement this.
-
-  sub needs_reload {
-      my($self, $obj) = @_;
-      return $obj->{ctime} < (stat($self->{file}))[9];
-  }
+Log::Dispatch::Configurator, so if your config class is based on
+filesystem files, you do not need to reimplement this.
 
 If you do not need I<singleton-ness> at all, always return true.
 
@@ -466,7 +459,7 @@ That's all. Now you can plug your own configurator (Hardwired) into
 Log::Dispatch::Config. What you should do is to pass configurator
 object to C<configure> method call instead of config file name.
 
-  use Log::Dispatch;
+  use Log::Dispatch::Config;
   use Log::Dispatch::Configurator::Hardwired;
 
   my $config = Log::Dispatch::Configurator::Hardwired->new;

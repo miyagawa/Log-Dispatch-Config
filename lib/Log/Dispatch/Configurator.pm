@@ -53,7 +53,7 @@ Log::Dispatch::Configurator - Abstract Configurator class
   sub get_attrs        { }
 
   # optional
-  sub parse        { }
+  sub reload       { }
   sub needs_reload { }
 
 =head1 DESCRIPTION
