@@ -2,16 +2,15 @@ package Log::Dispatch::Configurator;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = 0.12;
+$VERSION = 0.11_01;
 
 sub new {
     my($class, $file) = @_;
-    my $self = bless {
+    bless {
 	file   => $file,
 	_ctime => 0,
 	_watch => 0,
     }, $class;
-    $self;
 }
 
 sub parse { }

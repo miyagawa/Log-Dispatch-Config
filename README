@@ -3,20 +3,20 @@ NAME
 
 SYNOPSIS
       use Log::Dispatch::Config;
-      Log::Dispatch::Config->configure('/path/to/config');
+      Log::Dispatch::Config->configure('/path/to/log.conf');
 
       my $dispatcher = Log::Dispatch::Config->instance;
       $dispatcher->debug('this is debug message');
       $dispatcher->emergency('something *bad* happened!');
-
-      # or the same
-      my $dispatcher = Log::Dispatch->instance;
 
       # or if you write your own config parser:
       use Log::Dispatch::Configurator::XMLSimple;
 
       my $config = Log::Dispatch::Configurator::XMLSimple->new('log.xml');
       Log::Dispatch::Config->configure($config);
+
+      # automatic reloading conf file, when modified
+      Log::Dispatch::Config->configure_and_watch('/path/to/log.conf');
 
 DESCRIPTION
     Log::Dispatch::Config is a subclass of Log::Dispatch and provides a way
@@ -148,9 +148,10 @@ SINGLETON
     See GoF Design Pattern book for Singleton Pattern.
 
     But in practice, in persistent environment like mod_perl, Singleton
-    instance is not so useful. Log::Dispatch::Config defines "instance"
-    method so that the object reloads itself when configuration file is
-    modified since its last object creation time.
+    instance becomes sometimes messy. If you call "configure_and_watch"
+    method on Log::Dispatch::Config instead of "configure", "instance" call
+    will reload the singleton object when configuration file is modified
+    since its last configuration time.
 
 PLUGGABLE CONFIGURATOR
     If you pass filename to "configure" method call, this module handles the
@@ -161,15 +162,10 @@ PLUGGABLE CONFIGURATOR
     hardwired version equivalent to the one above in the section on
     "CONFIGURATION".
 
-    *   Inherit from Log::Dispatch::Configurator. Stub "new" constructor is
-        inherited, but you can roll your own with it.
+    *   Inherit from Log::Dispatch::Configurator.
 
           package Log::Dispatch::Configurator::Hardwired;
           use base qw(Log::Dispatch::Configurator);
-
-          sub new {
-              bless {}, shift;
-          }
 
     *   Implement two required object methods "get_attrs_global" and
         "get_attrs".
@@ -213,10 +209,10 @@ PLUGGABLE CONFIGURATOR
               }
           }
 
-    *   Implement optional "needs_reload" and "reload" methods.
-        "needs_reload" accepts Log::Dispatch::Config instance and should
-        return boolean value if the object is stale and needs reloading
-        itself.
+    *   Implement optional "needs_reload" and "parse" methods.
+        "needs_reload" should return boolean value if the object is stale
+        and needs reloading itself. This method will be triggered when you
+        configure logging object with "configure_and_watch" method.
 
         Stub config file mtime based "needs_reload" method is declared in
         Log::Dispatch::Configurator as below, so if your config class is
@@ -227,21 +223,14 @@ PLUGGABLE CONFIGURATOR
               return $obj->{ctime} < (stat($self->{file}))[9];
           }
 
-        If you do not need *singleton-ness*, always return true.
+        If you do not need *singleton-ness at all*, always return true.
 
           sub needs_reload { 1 }
 
-        "reload" method is called when "needs_reload" returns true, and
-        should return new Configurator instance. Typically you should place
-        configuration parsing again on this method, so
-        Log::Dispatch::Configurator again declares stub "reload" method that
-        clones your object.
-
-          sub reload {
-              my $self = shift;
-              my $class = ref $self;
-              return $class->new($self->{file});
-          }
+        "parse" method should do parsing of the config file. This method is
+        called in the first parsing of the config file, and again when
+        "needs_reload" returns true. Log::Dispatch::Configurator base class
+        has a null "parse" method.
 
     *   That's all. Now you can plug your own configurator (Hardwired) into
         Log::Dispatch::Config. What you should do is to pass configurator
@@ -278,7 +267,7 @@ CALLER STACK
           $Logger->$level($msg);
       }
 
-    Note that your log caller's namespace should not begin with
+    Note that your log caller's namespace should not match against
     "/^Log::Dispatch/", which makes this module confusing.
 
 AUTHOR
@@ -289,6 +278,7 @@ AUTHOR
     under the same terms as Perl itself.
 
 SEE ALSO
-    the Log::Dispatch::Configurator::AppConfig manpage, the Log::Dispatch
-    manpage, the AppConfig manpage
+    the Log::Dispatch::Config::Category manpage, the
+    Log::Dispatch::Configurator::AppConfig manpage, the Log::Dispatch
+    manpage, the AppConfig manpage, the POE::Component::Logger manpage
 

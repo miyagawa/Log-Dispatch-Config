@@ -2,7 +2,7 @@ package Log::Dispatch::Config::Category;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = 0.12;
+$VERSION = 0.11_01;
 
 use Log::Dispatch::Config;
 
@@ -36,6 +36,11 @@ sub configure_and_watch {
 sub instance {
     my($class, $name) = @_;
     return $class->_classname($name)->instance;
+}
+
+sub reload {
+    my($class, $name) = @_;
+    return $class->_classname($name)->reload;
 }
 
 sub _classname {
@@ -85,6 +90,16 @@ will result to:
 
   package Log::Dispatch::Config::Category::Foo;
   use base qw(Log::Dispatch::Config);
+
+=head1 TODO
+
+=over 4
+
+=item *
+
+Defines default logger for not confgured name. log4j has root for it.
+
+=cut
 
 =head1 AUTHOR
 

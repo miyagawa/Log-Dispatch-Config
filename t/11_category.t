@@ -17,4 +17,8 @@ isnt "$foo", "$bar", 'not same instance';
 my $bar2 = Log::Dispatch::Config::Category->instance('Bar');
 is "$bar", "$bar2", 'same instance';
 
+Log::Dispatch::Config::Category->reload('Bar');
+my $bar3 = Log::Dispatch::Config::Category->instance('Bar');
+isnt "$bar2", "$bar3", 'not same instance';
+
 END { unlink 't/log.out' if -e 't/log.out' }
