@@ -6,6 +6,8 @@ SYNOPSIS
       Log::Dispatch::Config->configure('/path/to/config');
 
       my $dispatcher = Log::Dispatch::Config->instance;
+      $dispatcher->debug('this is debug message');
+      $dispatcher->emergency('something *bad* happened!');
 
       # or the same
       my $dispatcher = Log::Dispatch->instance;
@@ -83,6 +85,7 @@ CONFIGURATION
           %L    line number
           %P    package
           %n    newline (\n)
+          %%    % itself
 
         Note that datetime (%d) format is configurable by passing "strftime"
         fmt in braket after %d. (I know it looks quite messy, but its
@@ -178,7 +181,7 @@ PLUGGABLE CONFIGURATOR
           sub get_attrs_global {
               my $self = shift;
               return {
-                  'format' => undef,
+                  format => undef,
                   dispatchers => [ qw(file screen) ],
               };
           }
@@ -194,7 +197,7 @@ PLUGGABLE CONFIGURATOR
                       min_level => 'debug',
                       filename  => '/path/to/log',
                       mode      => 'append',
-                      'format'  => '[%d] [%p] %m at %F line %L%n',
+                      format  => '[%d] [%p] %m at %F line %L%n',
                   };
               }
               elsif ($name eq 'screen') {
@@ -202,7 +205,7 @@ PLUGGABLE CONFIGURATOR
                       class     => 'Log::Dispatch::Screen',
                       min_level => 'info',
                       stderr    => 1,
-                      'format'  => '%m',
+                      format  => '%m',
                   };
               }
               else {
@@ -267,15 +270,16 @@ CALLER STACK
       Logger->logit('debug', 'foobar');
 
     You can adjust package variable $Log::Dispatch::Config::CallerDepth to
-    change the caller stack depth. The default value is 3, (which depends
-    heavily on Log::Dispatch's undocumented implementation. It might be
-    changed in future).
+    increase the caller stack depth. The default value is 0.
 
       sub logit {
           my($class, $level, $msg) = @_;
-          local $Log::Dispatch::Config::CallerDepth = 4;
+          local $Log::Dispatch::Config::CallerDepth = 1;
           $Logger->$level($msg);
       }
+
+    Note that your log caller's namespace should not begin with
+    "/^Log::Dispatch/", which makes this module confusing.
 
 AUTHOR
     Tatsuhiko Miyagawa <miyagawa@bulknews.net> with much help from Matt
