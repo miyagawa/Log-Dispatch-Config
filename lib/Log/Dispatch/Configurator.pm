@@ -6,19 +6,21 @@ $VERSION = 0.11_02;
 
 sub new {
     my($class, $file) = @_;
-    bless {
-	file   => $file,
-	_ctime => 0,
-	_watch => 0,
-    }, $class;
+    bless { file   => $file }, $class;
+}
+
+sub _init {
+    my $self = shift;
+    $self->{_ctime} = 0 unless defined $self->{_ctime};
+    $self->{_watch} = 0 unless defined $self->{_watch};
 }
 
 # backward compatible code
 sub parse {
     my $self = shift;
     my $class = ref $self;
-    my %res = map { $_ => $self->{$_} } grep /^_/, keys %$self;
-    %{$self} = (%{$class->new($self->{file})}, %res);
+    %$self = (%$self, %{$class->new($self->{file})});
+    $self->_init;
 }
 
 sub needs_reload {

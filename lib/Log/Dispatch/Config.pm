@@ -11,6 +11,8 @@ use fields qw(config);
 # caller depth: can be changed from outside
 $Log::Dispatch::Config::CallerDepth = 0;
 
+sub _croak { require Carp; Carp::croak(@_); }
+
 # accessor for symblic reference
 sub __instance {
     my $class = shift;
@@ -22,14 +24,14 @@ sub __instance {
 
 sub configure {
     my($class, $config) = @_;
-    die "no config file or configurator supplied" unless $config;
+    _croak "no config file or configurator supplied" unless $config;
 
     # default configurator: AppConfig
     unless (UNIVERSAL::isa($config, 'Log::Dispatch::Configurator')) {
 	require Log::Dispatch::Configurator::AppConfig;
 	$config = Log::Dispatch::Configurator::AppConfig->new($config);
     }
-
+    $config->_init;
     $class->__instance($config);
 }
 
@@ -46,12 +48,7 @@ sub Log::Dispatch::instance { __PACKAGE__->instance; }
 sub instance {
     my $class = shift;
 
-    my $instance = $class->__instance;
-    unless (defined $instance) {
-	require Carp;
-	Carp::croak("Log::Dispatch::Config->configure not yet called.");
-    }
-
+    my $instance = $class->__instance or _croak "Log::Dispatch::Config->configure not yet called.";
     if (UNIVERSAL::isa($instance, 'Log::Dispatch::Config')) {
         # reload singleton on the fly
 	$class->reload if $instance->needs_reload;
