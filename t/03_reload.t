@@ -36,7 +36,7 @@ bar.min_level=debug
 CFG
     ;
 
-    local $SIG{__WARN__} = sub {};
+    local $^W;
     my $disp2 = Log::Dispatch->instance;
     isa_ok $disp2->{outputs}->{bar}, 'Log::Dispatch::File';
     is $disp2->{outputs}->{foo}, undef;
