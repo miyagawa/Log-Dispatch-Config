@@ -147,11 +147,34 @@ SINGLETON
 
     See GoF Design Pattern book for Singleton Pattern.
 
-    But in practice, in persistent environment like mod_perl, Singleton
-    instance becomes sometimes messy. If you call "configure_and_watch"
-    method on Log::Dispatch::Config instead of "configure", "instance" call
-    will reload the singleton object when configuration file is modified
-    since its last configuration time.
+    But in practice, in persistent environment like mod_perl, lifetime of
+    Singleton instance becomes sometimes messy. If you want to reload
+    singleton object manually, call "reload" method.
+
+      Log::Dispatch::Config->reload;
+
+    And, if you want to reload object on the fly, as you edit "log.conf" or
+    something like that, what you should do is to call "configure_and_watch"
+    method on Log::Dispatch::Config instead of "configure". Then "instance"
+    call will check mtime of configuration file, and compares it with last
+    configuration time. If config file is newer than last configuration, it
+    will automatically reload object.
+
+NAMESPACE COLLISION
+    If you use Log::Dispatch::Config in multiple projects on the same perl
+    interpreter (like mod_perl), namespace collision would be a problem.
+    Bizzare thing will happen when you call
+    "Log::Dispatch::Config->configure" multiple times with differenct
+    argument.
+
+    In such cases, what you should do is to define your own logger class.
+
+      package My::Logger;
+      use Log::Dispatch::Config;
+      use base qw(Log::Dispatch::Config);
+
+    Or make wrapper for it. See the POE::Component::Logger manpage
+    implementation by Matt.
 
 PLUGGABLE CONFIGURATOR
     If you pass filename to "configure" method call, this module handles the
@@ -278,7 +301,6 @@ AUTHOR
     under the same terms as Perl itself.
 
 SEE ALSO
-    the Log::Dispatch::Config::Category manpage, the
-    Log::Dispatch::Configurator::AppConfig manpage, the Log::Dispatch
+    the Log::Dispatch::Configurator::AppConfig manpage, the Log::Dispatch
     manpage, the AppConfig manpage, the POE::Component::Logger manpage
 

@@ -2,7 +2,7 @@ package Log::Dispatch::Config;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = 0.11_01;
+$VERSION = 0.11_02;
 
 use Log::Dispatch;
 use base qw(Log::Dispatch);
@@ -362,11 +362,35 @@ returning same object.
 
 See GoF Design Pattern book for Singleton Pattern.
 
-But in practice, in persistent environment like mod_perl, Singleton
-instance becomes sometimes messy. If you call C<configure_and_watch>
-method on Log::Dispatch::Config instead of C<configure>, C<instance>
-call will reload the singleton object when configuration file is
-modified since its last configuration time.
+But in practice, in persistent environment like mod_perl, lifetime of
+Singleton instance becomes sometimes messy. If you want to reload
+singleton object manually, call C<reload> method.
+
+  Log::Dispatch::Config->reload;
+
+And, if you want to reload object on the fly, as you edit C<log.conf>
+or something like that, what you should do is to call
+C<configure_and_watch> method on Log::Dispatch::Config instead of
+C<configure>. Then C<instance> call will check mtime of configuration
+file, and compares it with last configuration time. If config file is
+newer than last configuration, it will automatically reload object.
+
+=head1 NAMESPACE COLLISION
+
+If you use Log::Dispatch::Config in multiple projects on the same perl
+interpreter (like mod_perl), namespace collision would be a
+problem. Bizzare thing will happen when you call
+C<Log::Dispatch::Config-E<gt>configure> multiple times with differenct
+argument.
+
+In such cases, what you should do is to define your own logger class.
+
+  package My::Logger;
+  use Log::Dispatch::Config;
+  use base qw(Log::Dispatch::Config);
+
+Or make wrapper for it. See L<POE::Component::Logger> implementation
+by Matt.
 
 =head1 PLUGGABLE CONFIGURATOR
 
@@ -507,7 +531,6 @@ it under the same terms as Perl itself.
 
 =head1 SEE ALSO
 
-L<Log::Dispatch::Config::Category>,
 L<Log::Dispatch::Configurator::AppConfig>, L<Log::Dispatch>,
 L<AppConfig>, L<POE::Component::Logger>
 

@@ -3,7 +3,6 @@ MANIFEST
 Makefile.PL
 README
 lib/Log/Dispatch/Config.pm
-lib/Log/Dispatch/Config/Category.pm
 lib/Log/Dispatch/Configurator.pm
 lib/Log/Dispatch/Configurator/AppConfig.pm
 t/00_compile.t
@@ -17,8 +16,6 @@ t/07_hardwired.t
 t/08_datetime.t
 t/09_ini.t
 t/10_caller.t
-t/11_category.t
-t/12_cat_watch.t
 t/another.cfg
 t/date.cfg
 t/log.cfg
