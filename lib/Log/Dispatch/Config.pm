@@ -2,11 +2,14 @@ package Log::Dispatch::Config;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.06';
+$VERSION = '0.07';
 
 require Log::Dispatch;
 use base qw(Log::Dispatch);
 use fields qw(config ctime);
+
+# caller depth: can be changed from outside
+$Log::Dispatch::Config::CallerDepth = 3;
 
 sub configure {
     my($class, $config) = @_;
@@ -66,12 +69,12 @@ sub create_instance {
     my($class, $config) = @_;
 
     my $global = $config->get_attrs_global;
-    my $callback = $class->format_to_cb($global->{format}, 3);
+    my $callback = $class->format_to_cb($global->{format}, 0);
     my %dispatchers;
     foreach my $disp (@{$global->{dispatchers}}) {
         $dispatchers{$disp} = $class->config_dispatcher(
-                $disp, $config->get_attrs($disp),
-	    );
+	    $disp, $config->get_attrs($disp),
+	);
     }
     my %args;
     $args{callbacks} = $callback if defined $callback;
@@ -104,7 +107,7 @@ sub config_dispatcher {
     die $@ if $@ && $@ !~ /locate/;
 
     if (exists $var->{format}) {
-        $var->{callbacks} = $class->format_to_cb(delete $var->{format}, 5);
+        $var->{callbacks} = $class->format_to_cb(delete $var->{format}, 2);
     }
     return $var;
 }
@@ -121,9 +124,18 @@ sub format_to_cb {
     my($class, $format, $stack) = @_;
     return undef unless defined $format;
 
+    my $needs_caller = $format =~ /%[FLP]/;
     return sub {
 	my %p = @_;
-	@p{qw(package filename line)} = caller($stack);
+
+	# caller() might be slow
+	if ($needs_caller) {
+	    my $depth = $Log$
+	    my $depth = Revision 1.15  2001/12/18 16:46:39  miyagawa
+	    my $depth = caller stack
+	    my $depth =stack;
+	    @p{qw(package filename line)} = caller($depth);
+	}
 
 	my $log = $format;
 	$log =~ s/%n/\n/g;
@@ -259,6 +271,9 @@ implementation, otherwise POSIX.
 C<format> defined here would apply to all the log messages to
 dispatchers. This parameter is B<optional>.
 
+See L</"CALLER STACK"> for details about package, line number and
+filename.
+
 =back
 
 =head2 PARAMETERS FOR EACH DISPATCHER
@@ -358,7 +373,7 @@ C<dispatchers> should be an array reference of names of dispatchers.
       };
   }
 
-C<get_attes> accepts name of a dispatcher and should return hash
+C<get_attrs> accepts name of a dispatcher and should return hash
 reference of parameters associated with the dispatcher.
 
   sub get_attrs {
@@ -431,15 +446,33 @@ object to C<configure> method call instead of config file name.
 
 =back
 
-=head1 TODO
+=head1 CALLER STACK
 
-=over 4
+When you call logging method from your subroutines / methods, caller
+stack would increase and thus you can't see where the log really comes
+from.
 
-=item *
+  package Logger;
+  my $Logger = Log::Dispatch::Config->instance;
 
-LogLevel configuration depending on caller package like log4j?
+  sub logit {
+      my($class, $level, $msg) = @_;
+      $Logger->$level($msg);
+  }
 
-=back
+  package main;
+  Logger->logit('debug', 'foobar');
+
+You can adjust package variable C<$Log::Dispatch::Config::CallerDepth>
+to change the caller stack depth. The default value is 3, (which
+depends heavily on Log::Dispatch's undocumented implementation. It
+might be changed in future).
+
+  sub logit {
+      my($class, $level, $msg) = @_;
+      local $Log::Dispatch::Config::CallerDepth = 4;
+      $Logger->$level($msg);
+  }
 
 =head1 AUTHOR
 

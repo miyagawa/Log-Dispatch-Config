@@ -180,7 +180,7 @@ PLUGGABLE CONFIGURATOR
               };
           }
 
-        "get_attes" accepts name of a dispatcher and should return hash
+        "get_attrs" accepts name of a dispatcher and should return hash
         reference of parameters associated with the dispatcher.
 
           sub get_attrs {
@@ -258,5 +258,6 @@ AUTHOR
     under the same terms as Perl itself.
 
 SEE ALSO
-    the Log::Dispatch manpage, the AppConfig manpage
+    the Log::Dispatch::Configurator::AppConfig manpage, the Log::Dispatch
+    manpage, the AppConfig manpage
 

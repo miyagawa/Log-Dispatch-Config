@@ -1,7 +1,10 @@
 Revision history for Perl extension Log::Dispatch::Config.
 
-0.07
+0.07  Wed Dec 19 01:46:00 JST 2001
 	- forgot to update MANIFEST
+	* Add $Log::Dispatch::Config::CallerDepth variable
+	  (Thanks to Matt Sergeant <matt@sergeant.org>)
+	- Call caller() function only when necessary
 
 0.06  Tue Dec 18 21:27:51 JST 2001
 	--- developer API change ---
@@ -11,6 +14,7 @@ Revision history for Perl extension Log::Dispatch::Config.
 	  (Thanks to Matt Sergeant)
 	- Deprecated ${XXX} style format
 	- Switched to fully qualified variable from use vars (for inheritance)
+	* Allows .ini style grouping in AppConfig
 
 0.05  Thu Dec  6 19:05:11 JST 2001
 	- CVS glitches in Makefile.PL (replacement of the RCS keyword ..)

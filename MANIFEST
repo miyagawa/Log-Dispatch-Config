@@ -15,6 +15,7 @@ t/06_configurator.t
 t/07_hardwired.t
 t/08_datetime.t
 t/09_ini.t
+t/10_caller.t
 t/date.cfg
 t/log.cfg
 t/log.ini
