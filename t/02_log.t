@@ -19,7 +19,7 @@ Log::Dispatch::Config->configure('t/log.cfg');
 
 tie *STDERR, 'IO::Scalar', \my $err;
 
-my $disp = Log::Dispatch->instance;
+my $disp = Log::Dispatch::Config->instance;
 $disp->debug('debug');
 $disp->alert('alert');
 

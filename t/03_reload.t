@@ -23,7 +23,7 @@ CFG
 Log::Dispatch::Config->configure($file);
 
 {
-    my $disp = Log::Dispatch->instance;
+    my $disp = Log::Dispatch::Config->instance;
     isa_ok $disp->{outputs}->{foo}, 'Log::Dispatch::File';
 
     sleep 1;
@@ -37,7 +37,7 @@ CFG
     ;
 
     local $^W;
-    my $disp2 = Log::Dispatch->instance;
+    my $disp2 = Log::Dispatch::Config->instance;
     isa_ok $disp2->{outputs}->{bar}, 'Log::Dispatch::File';
     is $disp2->{outputs}->{foo}, undef;
     isnt "$disp", "$disp2", "$disp - $disp2";

@@ -19,7 +19,7 @@ CFG
 Log::Dispatch::Config->configure($file);
 
 {
-    my $disp = Log::Dispatch->instance;
+    my $disp = Log::Dispatch::Config->instance;
     $disp->debug('null');
 }
 
