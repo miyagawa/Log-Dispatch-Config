@@ -7,14 +7,20 @@ SYNOPSIS
 
       my $dispatcher = Log::Dispatch::Config->instance;
 
-      # or the same (may be deprecated)
+      # or the same
       my $dispatcher = Log::Dispatch->instance;
+
+      # or if you write your own config parser:
+      use Log::Dispatch::Configurator::XMLSimple;
+
+      my $config = Log::Dispatch::Configurator::XMLSimple->new('log.xml');
+      Log::Dispatch::Config->configure($config);
 
 DESCRIPTION
     Log::Dispatch::Config is a subclass of Log::Dispatch and provides a way
-    to configure Log::Dispatch object with configulation file (in AppConfig
-    format). I mean, this is log4j for Perl, not with all API compatibility
-    though.
+    to configure Log::Dispatch object with configulation file (default, in
+    AppConfig format). I mean, this is log4j for Perl, not with all API
+    compatibility though.
 
 METHOD
     This module has a class method "configure" which parses config file for
@@ -51,8 +57,8 @@ CONFIGURATION
       screen.stderr = 1
       screen.format = %m
 
-    Config file is parsed with AppConfig module, see the AppConfig manpage
-    when you face configuration parsing error.
+    In this example, config file is written in AppConfig format, see the
+    section on "PLUGGABLE CONFIGURATOR" for other config parsing scheme.
 
   GLOBAL PARAMETERS
 
@@ -64,18 +70,24 @@ CONFIGURATION
 
     format
           format = [%d] [%p] %m at %F line %L%n
-          format = [${datetime}] [${prioity}] ${message} at ${filename} line ${line}\n
 
-        "format" defines log format. %X style and "${XXX}" style are both
-        supported. Possible conversions format are
+        "format" defines log format. Possible conversions format are
 
-          %d ${datetime}        datetime string
-          %p ${priority}        priority (debug, info, warning ...)
-          %m ${message}         message string
-          %F ${filename}        filename
-          %L ${line}            line number
-          %P ${package}         package
-          %n                    newline (\n)
+          %d    datetime string (ctime(3))
+          %p    priority (debug, info, warning ...)
+          %m    message string
+          %F    filename
+          %L    line number
+          %P    package
+          %n    newline (\n)
+
+        Note that datetime (%d) format is configurable by passing "strftime"
+        fmt in braket after %d.
+
+          format = [%d{%Y%m%d}] %m  # datetime is now strftime "%Y%m%d"
+
+        If you have Time::Piece, this module uses its "strftime"
+        implementation, otherwise POSIX.
 
         "format" defined here would apply to all the log messages to
         dispatchers. This parameter is optional.
@@ -122,11 +134,106 @@ SINGLETON
     method so that the object reloads itself when configuration file is
     modified since its last object creation time.
 
+PLUGGABLE CONFIGURATOR
+    If you pass filename to "configure()" method call, this module handles
+    the config file with AppConfig. You can change config parsing scheme by
+    passing another pluggable configurator object.
+
+    Here is a way to declare new configurator class. The example below is
+    hardwired version equivalent to the one above in the section on
+    "CONFIGURATION".
+
+    *   Inherit from Log::Dispatch::Configurator. Stub "new" constructor is
+        inherited, but you can roll your own with it.
+
+          package Log::Dispatch::Configurator::Hardwired;
+          use base qw(Log::Dispatch::Configurator);
+
+          sub new {
+              bless {}, shift;
+          }
+
+    *   Implement three required object methods "global_format",
+        "dispatchers", "attrs".
+
+        "global_format" should return format string used in global
+        parameters.
+
+          sub global_format {
+              my $self = shift;
+              return undef;
+          }
+
+        "dispatchers" should return list of names of dispatchers.
+
+          sub dispatchers {
+              my $self = shift;
+              return 'file', 'screen';
+          }
+
+        "attrs" should accept name of dispatcher, and return hash reference
+        of parameters for the dispatcher.
+
+          sub attrs {
+              my($self, $name) = @_;
+              if ($name eq 'file') {
+                  return {
+                      class     => 'Log::Dispatch::File',
+                      min_level => 'debug',
+                      filename  => '/path/to/log',
+                      mode      => 'append',
+                      'format'  => '[%d] [%p] %m at %F line %L%n',
+                  };
+              } elsif ($name eq 'screen') {
+                  return {
+                      class     => 'Log::Dispatch::Screen',
+                      min_level => 'info',
+                      stderr    => 1,
+                      'format'  => '%m',
+                  };
+              }
+          }
+
+    *   Implement optional "needs_reload" and "reload" method.
+        "needs_reload" should return boolean value if the object is stale
+        and needs reloading itself.
+
+        Stub confif file mtime based "needs_reload" method is declared in
+        Log::Dispatch::Configurator as below, so if your config class is
+        based on filesystem files, you do not need to reimplement this.
+
+          sub needs_reload {
+              my($self, $obj) = @_;
+              return $obj->{ctime} < (stat($self->{file}))[9];
+          }
+
+        "reload" method is called when "needs_reload" returns true.
+        Typically you should place configuration parsing again on "reload"
+        method, so Log::Dispatch::Configurator again declares stub "reload"
+        method that clones your object.
+
+          sub reload {
+              my $self = shift;
+              my $class = ref $self;
+              return $class->new($self->{file});
+          }
+
+    *   Thats all. Now you can plug your own configurator (Hardwired) into
+        Log::Dispatch::Config. What you should do is to pass configurator
+        object to "config()" method call instead of config file name.
+
+          use Log::Dispatch;
+          use Log::Dispatch::Configurator::Hardwired;
+
+          my $config = Log::Dispatch::Configurator::Hardwired->new;
+          Log::Dispatch::Config->confifure($config);
+
 TODO
     *   LogLevel configuration depending on caller package like log4j?
 
 AUTHOR
-    Tatsuhiko Miyagawa <miyagawa@bulknews.net>
+    Tatsuhiko Miyagawa <miyagawa@bulknews.net> with much help from Matt
+    Sergeant <matt@sergeant.org>.
 
     This library is free software; you can redistribute it and/or modify it
     under the same terms as Perl itself.

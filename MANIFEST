@@ -3,10 +3,16 @@ MANIFEST
 Makefile.PL
 README
 lib/Log/Dispatch/Config.pm
+lib/Log/Dispatch/Configurator.pm
+lib/Log/Dispatch/Configurator/AppConfig.pm
 t/00_compile.t
 t/01_configure.t
 t/02_log.t
 t/03_reload.t
 t/04_nolog.t
 t/05_compat.t
+t/06_configurator.t
+t/07_hardwired.t
+t/08_datetime.t
+t/date.cfg
 t/log.cfg
