@@ -1,11 +1,12 @@
 Revision history for Perl extension Log::Dispatch::Config.
 
-0.11_01 Fri Jan 18 05:08:22 JST 2002
+0.11_02 Fri Jan 18 05:08:22 JST 2002
 	* [API change]
 	  No check on config mtime by default
 	  New class method: configure_and_watch()
 	  (Thanks to Hiroyuki Oyama <oyama@cpan.org>)
 	- Modified configurator API
+	- Added documenttion for subclassing/wrapping
 
 This release is a beta release. If you have trouble with this API
 change or something, please let me know ASAP.
