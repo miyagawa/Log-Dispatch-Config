@@ -4,10 +4,8 @@ Revision history for Perl extension Log::Dispatch::Config.
 	--- developer API change ---
 	* Added Log::Dispatch::Configurator and docs/tests for it
 	  (Thanks to Matt Sergeant <matt@sergeant.org>)
-	- Removed pseudo-hash dependency
-	  (Thanks to Dave Rolsky <autarch@urth.org>)
 	* Added Date/Time format configuration
-	  (Thanks to Matt Sergeant <matt@sergeant.org>)
+	  (Thanks to Matt Sergeant)
 	- Deprecated ${XXX} style format
 	- Switched to fully qualified variable from use vars (for inheritance)
 
