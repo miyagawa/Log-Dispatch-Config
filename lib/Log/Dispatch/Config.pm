@@ -2,14 +2,14 @@ package Log::Dispatch::Config;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.07';
+$VERSION = '0.08_01';
 
-require Log::Dispatch;
+use Log::Dispatch;
 use base qw(Log::Dispatch);
 use fields qw(config ctime);
 
 # caller depth: can be changed from outside
-$Log::Dispatch::Config::CallerDepth = 3;
+$Log::Dispatch::Config::CallerDepth = 0;
 
 sub configure {
     my($class, $config) = @_;
@@ -112,33 +112,29 @@ sub config_dispatcher {
     return $var;
 }
 
-my %syn = (
-    p => 'level',
-    m => 'message',
-    F => 'filename',
-    L => 'line',
-    P => 'package',
-);
-
 sub format_to_cb {
     my($class, $format, $stack) = @_;
     return undef unless defined $format;
 
+    # caller() called only when necessary
     my $needs_caller = $format =~ /%[FLP]/;
     return sub {
 	my %p = @_;
+	$p{p} = delete $p{level};
+	$p{m} = delete $p{message};
+	$p{n} = "\n";
+	$p{'%'} = '%';
 
-	# caller() might be slow
-	if ($needs_caller) {
-	    my $depth = $Log::Dispatch::Config::CallerDepth
-		+ $stack;
-	    @p{qw(package filename line)} = caller($depth);
-	}
+ 	if ($needs_caller) {
+	    my $depth = 0;
+	    $depth++ while caller($depth) =~ /^Log::Dispatch/;
+ 	    $depth += $Log::Dispatch::Config::CallerDepth;
+ 	    @p{qw(P F L)} = caller($depth);
+ 	}
 
 	my $log = $format;
-	$log =~ s/%n/\n/g;
 	$log =~ s/%d(?:{(.*?)})?/$1 ? _strftime($1) : scalar localtime/eg;
-	$log =~ s/%([pmFLP])/$p{$syn{$1}}/g;
+	$log =~ s/%([%pmFLPn])/$p{$1}/g;
 
 	return $log;
     };
@@ -172,6 +168,8 @@ Log::Dispatch::Config - Log4j for Perl
   Log::Dispatch::Config->configure('/path/to/config');
 
   my $dispatcher = Log::Dispatch::Config->instance;
+  $dispatcher->debug('this is debug message');
+  $dispatcher->emergency('something *bad* happened!');
 
   # or the same
   my $dispatcher = Log::Dispatch->instance;
@@ -255,7 +253,8 @@ C<format> defines log format. Possible conversions format are
   %F	filename
   %L	line number
   %P	package
-  %n    newline (\n)
+  %n	newline (\n)
+  %%	% itself
 
 Note that datetime (%d) format is configurable by passing C<strftime>
 fmt in braket after %d. (I know it looks quite messy, but its
@@ -366,7 +365,7 @@ C<dispatchers> should be an array reference of names of dispatchers.
   sub get_attrs_global {
       my $self = shift;
       return {
-          'format' => undef,
+          format => undef,
           dispatchers => [ qw(file screen) ],
       };
   }
@@ -382,7 +381,7 @@ reference of parameters associated with the dispatcher.
               min_level => 'debug',
               filename  => '/path/to/log',
               mode      => 'append',
-              'format'  => '[%d] [%p] %m at %F line %L%n',
+              format  => '[%d] [%p] %m at %F line %L%n',
           };
       }
       elsif ($name eq 'screen') {
@@ -390,7 +389,7 @@ reference of parameters associated with the dispatcher.
 	      class     => 'Log::Dispatch::Screen',
 	      min_level => 'info',
 	      stderr    => 1,
-	      'format'  => '%m',
+	      format  => '%m',
 	  };
       }
       else {
@@ -462,15 +461,16 @@ from.
   Logger->logit('debug', 'foobar');
 
 You can adjust package variable C<$Log::Dispatch::Config::CallerDepth>
-to change the caller stack depth. The default value is 3, (which
-depends heavily on Log::Dispatch's undocumented implementation. It
-might be changed in future).
+to increase the caller stack depth. The default value is 0.
 
   sub logit {
       my($class, $level, $msg) = @_;
-      local $Log::Dispatch::Config::CallerDepth = 4;
+      local $Log::Dispatch::Config::CallerDepth = 1;
       $Logger->$level($msg);
   }
+
+Note that your log caller's namespace should not begin with
+C</^Log::Dispatch/>, which makes this module confusing.
 
 =head1 AUTHOR
 

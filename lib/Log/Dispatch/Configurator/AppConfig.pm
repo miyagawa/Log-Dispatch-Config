@@ -2,8 +2,9 @@ package Log::Dispatch::Configurator::AppConfig;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = 0.01;
+$VERSION = 0.02;
 
+use Log::Dispatch::Configurator;
 use base qw(Log::Dispatch::Configurator);
 use AppConfig;
 
@@ -27,7 +28,7 @@ sub _config { $_[0]->{_config} }
 sub get_attrs_global {
     my $self = shift;
     return {
-	'format'    => scalar $self->_config->get('format'),
+	format      => scalar $self->_config->get('format'),
 	dispatchers => [ split /\s+/, $self->_config->get('dispatchers') ],
     };
 }

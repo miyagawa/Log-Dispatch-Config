@@ -1,6 +1,6 @@
 use ExtUtils::MakeMaker;
 
-$LAST_API_CHANGE = 0.05;
+$LAST_API_CHANGE = 0.08;
 eval q{require Log::Dispatch::Config};
 unless ($@) {
     print <<WARN if ${Log::Dispatch::Config::VERSION} <= $LAST_API_CHANGE;
@@ -21,5 +21,6 @@ WriteMakefile(
 	Log::Dispatch => 1.79,
 	AppConfig => 1.52,
 	IO::Scalar => 0,
+	File::Temp => 0.12,
     },
 );

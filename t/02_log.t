@@ -30,7 +30,7 @@ like $file, qr(debug at t/02_log\.t), 'debug';
 like $file, qr(alert at t/02_log\.t), 'alert';
 
 ok $err !~ qr/debug/, 'no debug';
-is $err, "alert", 'alert';
+is $err, "alert %", 'alert %';
 
 
 

@@ -1,18 +1,30 @@
 Revision history for Perl extension Log::Dispatch::Config.
 
+0.09  Thu Dec 27 15:01:12 JST 2001
+	- Fixed unnecessary quotes with 'format'
+	- Clean up format_to_cb code
+	- '%%' is replaced by '%'
+	* [API change] $CallerDepth defaults to 0
+	- caller() code is now independent of L::D implementation
+	  (Thanks to Dave Rolsky <autarch@urth.org>)
+
+0.08  Sat Dec 22 15:58:20 JST 2001
+	- Added dependency on File::Temp in Makefile.PL
+	  (Thanks to Matt Sergeant <matt@sergeant.org>)
+	- Workaround against broken base.pm
+
 0.07  Wed Dec 19 01:46:00 JST 2001
 	- forgot to update MANIFEST
-	* Add $Log::Dispatch::Config::CallerDepth variable
-	  Call caller() function only when necessary
+	* Added $Log::Dispatch::Config::CallerDepth variable
+	- Call caller() function only when necessary
 	  (Thanks to Matt Sergeant <matt@sergeant.org>)
 
 0.06  Tue Dec 18 21:27:51 JST 2001
-	--- developer API change ---
-	* Added Log::Dispatch::Configurator and docs/tests for it
+	* Added Log::Dispatch::Configurator
 	  (Thanks to Matt Sergeant <matt@sergeant.org>)
-	* Added Date/Time format configuration
+	* [API change] Added Date/Time format configuration
 	  (Thanks to Matt Sergeant)
-	- Deprecated ${XXX} style format
+	- [API change] Deprecated ${XXX} style format
 	- Switched to fully qualified variable from use vars (for inheritance)
 	* Allows .ini style grouping in AppConfig
 
@@ -20,8 +32,8 @@ Revision history for Perl extension Log::Dispatch::Config.
 	- CVS glitches in Makefile.PL (replacement of the RCS keyword ..)
 
 0.04  Thu Dec  6 18:33:50 JST 2001
-	--- API change (with backward compatibility) ---
-	* Whole architecture redesign: now inherits from Log::Dispatch.
+	* Now inherits from Log::Dispatch.
+	* [API change] Added Log::Dispatch::Config->instance
 
 0.03  Tue Dec  4 11:33:15 JST 2001
 	- fixed 03_reload.t not to segfault

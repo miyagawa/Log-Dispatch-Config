@@ -20,7 +20,7 @@ sub logit {
 logit "foobar";
 like slurp("t/log.out"), qr/foobar at .*10_caller\.t line 17/;
 
-local $Log::Dispatch::Config::CallerDepth = 4;
+local $Log::Dispatch::Config::CallerDepth = 1;
 logit "bazbaz";
 like slurp("t/log.out"), qr/bazbaz at .*10_caller\.t line 24/;
 

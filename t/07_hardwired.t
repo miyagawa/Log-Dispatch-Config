@@ -12,7 +12,7 @@ END { unlink 't/log.out' if -e 't/log.out' }
     sub get_attrs_global {
 	my $self = shift;
 	return {
-	    'format' => undef,
+	    format => undef,
 	    dispatchers => [ qw(file screen) ],
 	};
     }
@@ -25,14 +25,14 @@ END { unlink 't/log.out' if -e 't/log.out' }
 		min_level => 'debug',
 		filename  => 't/log.out',
 		mode      => 'append',
-		'format'  => '[%d] [%p] %m at %F line %L%n',
+		format    => '[%d] [%p] %m at %F line %L%n',
 	    };
 	} elsif ($name eq 'screen') {
 	    return {
 		class     => 'Log::Dispatch::Screen',
 		min_level => 'info',
 		stderr    => 1,
-		'format'  => '%m',
+		format    => '%m',
 	    };
 	}
     }
