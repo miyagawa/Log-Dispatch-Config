@@ -4,11 +4,11 @@ use strict;
 use vars qw($VERSION);
 $VERSION = '0.05';
 
-use AppConfig qw(:argcount);
 use base qw(Log::Dispatch);
 use fields qw(filename ctime);
-
 use vars qw($_Instance);
+
+use AppConfig qw(:argcount);
 
 sub configure {
     my($class, $file) = @_;
@@ -60,11 +60,11 @@ sub _create_instance {
 
     my %args;
     $args{callbacks} = $callback if defined $callback;
-    $_Instance = $class->new(%args);
+    my $instance = $class->new(%args);
 
     for my $dispname (keys %dispatchers) {
 	my $logclass = delete $dispatchers{$dispname}->{class};
-	$_Instance->add(
+	$instance->add(
 	    $logclass->new(
 		name => $dispname,
 		%{$dispatchers{$dispname}},
@@ -73,10 +73,10 @@ sub _create_instance {
     }
 
     # config info
-    $_Instance->{filename}  = $file;
-    $_Instance->{ctime} = time;
+    $instance->{filename}  = $file;
+    $instance->{ctime} = time;
 
-    return $_Instance;
+    return $instance;
 }
 
 sub config_dispatchers {
