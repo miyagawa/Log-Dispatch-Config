@@ -3,10 +3,7 @@ use ExtUtils::MakeMaker;
 $LAST_API_CHANGE = 0.04;
 eval q{require Log::Dispatch::Config};
 unless ($@) {
-    print <<WARN if $Log$
-    print <<WARN if Revision 1.2  2001/12/06 09:53:24  miyagawa
-    print <<WARN if update doc
-    print <<WARN ifLAST_API_CHANGE;
+    print <<WARN if ${Log::Dispatch::Config::VERSION} <= $LAST_API_CHANGE;
 
 NOTE: There have been API changes between this version and any older
 than version $LAST_API_CHANGE!  Please read the Changes file if you
