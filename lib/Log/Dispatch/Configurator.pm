@@ -13,17 +13,17 @@ sub new {
     }, $class;
 }
 
-sub parse { }
+# backward compatible code
+sub parse {
+    my $self = shift;
+    my $class = ref $self;
+    my %res = map { $_ => $self->{$_} } grep /^_/, keys %$self;
+    %{$self} = (%{$class->new($self->{file})}, %res);
+}
 
 sub needs_reload {
     my $self = shift;
     return $self->{_ctime} < (stat($self->{file}))[9];
-}
-
-sub conf_time {
-    my $self = shift;
-    $self->{_ctime} = shift if @_;
-    $self->{_ctime};
 }
 
 sub should_watch {

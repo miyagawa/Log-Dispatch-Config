@@ -30,26 +30,18 @@ sub configure {
 	$config = Log::Dispatch::Configurator::AppConfig->new($config);
     }
 
-    # records conf time
-    $config->conf_time(time);
     $class->__instance($config);
 }
 
 sub configure_and_watch {
     my($class, $config) = @_;
     $class->configure($config);
-
-    # hack: __instance should return conf
-    $config = $class->__instance;
-
-    # tells conf to watch config file
-    $config->should_watch(1);
+    $config = $class->__instance; # XXX: __instance is now config
+    $config->should_watch(1);	# tells conf to watch config file
 }
 
 # backward compatibility
-sub Log::Dispatch::instance {
-    __PACKAGE__->instance;
-}
+sub Log::Dispatch::instance { __PACKAGE__->instance; }
 
 sub instance {
     my $class = shift;
@@ -62,9 +54,7 @@ sub instance {
 
     if (UNIVERSAL::isa($instance, 'Log::Dispatch::Config')) {
         # reload singleton on the fly
-	if ($instance->needs_reload) {
-	    $class->reload;
-	}
+	$class->reload if $instance->needs_reload;
     }
     else {
         # first time call: $_instance is L::D::Configurator::*
@@ -83,16 +73,17 @@ sub reload {
     my $class = ref $proto || $proto;
     my $instance = $class->__instance;
 
-    # reconfigure, and returns instance
+    # reconfigure and recreate instance
     my $meth = $instance->{config}->should_watch
 	? \&configure_and_watch : \&configure;
     $class->$meth($instance->{config});
-    $class->__instance($class->instance);
+    $class->__instance($class->create_instance($instance->{config}));
 }
 
 sub create_instance {
     my($class, $config) = @_;
     $config->parse;
+    $config->{_ctime} = time;	# creation time
 
     my $global = $config->get_attrs_global;
     my $callback = $class->format_to_cb($global->{format}, 0);
@@ -234,16 +225,6 @@ So, what you should do is call C<configure> method once in somewhere
 (like C<startup.pl> in mod_perl), then you can get configured
 dispatcher instance via C<Log::Dispatch::Config-E<gt>instance>.
 
-Formerly, C<configure> method declares C<instance> method in
-Log::Dispatch namespace. Now it inherits from Log::Dispatch, so the
-namespace pollution is not necessary. Currrent version still defines
-one-liner shortcut:
-
-  sub Log::Dispatch::instance { Log::Dispatch::Config->instance }
-
-so still you can call C<Log::Dispatch-E<gt>instance>, if you prefer,
-or for backward compatibility.
-
 =head1 CONFIGURATION
 
 Here is an example of the config file:
@@ -372,8 +353,9 @@ And, if you want to reload object on the fly, as you edit C<log.conf>
 or something like that, what you should do is to call
 C<configure_and_watch> method on Log::Dispatch::Config instead of
 C<configure>. Then C<instance> call will check mtime of configuration
-file, and compares it with last configuration time. If config file is
-newer than last configuration, it will automatically reload object.
+file, and compares it with instanciation time of singleton object. If
+config file is newer than last instanciation, it will automatically
+reload object.
 
 =head1 NAMESPACE COLLISION
 

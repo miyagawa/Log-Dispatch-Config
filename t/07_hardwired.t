@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 5;
+use Test::More tests => 7;
 
 END { unlink 't/log.out' if -e 't/log.out' }
 
@@ -55,4 +55,7 @@ isa_ok $disp->{outputs}->{file}, 'Log::Dispatch::File';
 
 isnt "$disp", "$disp2", "$disp - $disp2";
 
+my $disp3 = Log::Dispatch::Config->instance;
+isnt "$disp", "$disp3", "$disp - $disp3";
+isnt "$disp2", "$disp3", "$disp2 - $disp3";
 

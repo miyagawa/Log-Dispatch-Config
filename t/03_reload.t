@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 4;
+use Test::More tests => 5;
 
 use Log::Dispatch::Config;
 use FileHandle;
@@ -25,4 +25,7 @@ Log::Dispatch::Config->configure_and_watch($file);
     isa_ok $disp2->{outputs}->{bar}, 'Log::Dispatch::File';
     is $disp2->{outputs}->{foo}, undef;
     isnt "$disp", "$disp2", "$disp - $disp2";
+
+    my $disp3 = Log::Dispatch::Config->instance;
+    is "$disp2", "$disp3", 'same one';
 }
