@@ -7,6 +7,8 @@ END { unlink 't/log.out' if -e 't/log.out' }
     package Log::Dispatch::Configurator::Hardwired;
     use base qw(Log::Dispatch::Configurator);
 
+    sub new { bless {}, shift }
+
     sub get_attrs_global {
 	my $self = shift;
 	return {

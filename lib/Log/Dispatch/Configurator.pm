@@ -2,36 +2,30 @@ package Log::Dispatch::Configurator;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = 0.11_03;
+$VERSION = 0.12;
 
 sub new {
     my($class, $file) = @_;
     bless { file   => $file }, $class;
 }
 
-sub _init {
+sub myinit {
     my $self = shift;
-    $self->{_ctime} = 0 unless defined $self->{_ctime};
-    $self->{_watch} = 0 unless defined $self->{_watch};
+    $self->{LDC_ctime} = 0 unless defined $self->{LDC_ctime};
+    $self->{LDC_watch} = 0 unless defined $self->{LDC_watch};
 }
 
-# backward compatible code
-sub parse {
-    my $self = shift;
-    my $class = ref $self;
-    %$self = (%$self, %{$class->new($self->{file})});
-    $self->_init;
-}
+sub reload { }
 
 sub needs_reload {
     my $self = shift;
-    return $self->{_ctime} < (stat($self->{file}))[9];
+    return $self->{LDC_ctime} < (stat($self->{file}))[9];
 }
 
 sub should_watch {
     my $self = shift;
-    $self->{_watch} = shift if @_;
-    return $self->{_watch};
+    $self->{LDC_watch} = shift if @_;
+    return $self->{LDC_watch};
 }
 
 sub _abstract_method {

@@ -2,7 +2,7 @@ package Log::Dispatch::Config;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = 0.11_03;
+$VERSION = 0.12;
 
 use Log::Dispatch;
 use base qw(Log::Dispatch);
@@ -31,7 +31,7 @@ sub configure {
 	require Log::Dispatch::Configurator::AppConfig;
 	$config = Log::Dispatch::Configurator::AppConfig->new($config);
     }
-    $config->_init;
+    $config->myinit;
     $class->__instance($config);
 }
 
@@ -69,18 +69,13 @@ sub reload {
     my $proto = shift;
     my $class = ref $proto || $proto;
     my $instance = $class->__instance;
-
-    # reconfigure and recreate instance
-    my $meth = $instance->{config}->should_watch
-	? \&configure_and_watch : \&configure;
-    $class->$meth($instance->{config});
+    $instance->{config}->reload;
     $class->__instance($class->create_instance($instance->{config}));
 }
 
 sub create_instance {
     my($class, $config) = @_;
-    $config->parse;
-    $config->{_ctime} = time;	# creation time
+    $config->{LDC_ctime} = time;	# creation time
 
     my $global = $config->get_attrs_global;
     my $callback = $class->format_to_cb($global->{format}, 0);
@@ -195,14 +190,14 @@ Log::Dispatch::Config - Log4j for Perl
   $dispatcher->debug('this is debug message');
   $dispatcher->emergency('something *bad* happened!');
 
+  # automatic reloading conf file, when modified
+  Log::Dispatch::Config->configure_and_watch('/path/to/log.conf');
+
   # or if you write your own config parser:
   use Log::Dispatch::Configurator::XMLSimple;
 
   my $config = Log::Dispatch::Configurator::XMLSimple->new('log.xml');
   Log::Dispatch::Config->configure($config);
-
-  # automatic reloading conf file, when modified
-  Log::Dispatch::Config->configure_and_watch('/path/to/log.conf');
 
 =head1 DESCRIPTION
 
@@ -369,7 +364,7 @@ In such cases, what you should do is to define your own logger class.
   use base qw(Log::Dispatch::Config);
 
 Or make wrapper for it. See L<POE::Component::Logger> implementation
-by Matt.
+by Matt Sergeant.
 
 =head1 PLUGGABLE CONFIGURATOR
 
@@ -388,6 +383,13 @@ Inherit from Log::Dispatch::Configurator.
 
   package Log::Dispatch::Configurator::Hardwired;
   use base qw(Log::Dispatch::Configurator);
+
+Declare your own C<new> constructor. Stub C<new> method is defined in
+Configurator base class, but you want to put parsing method in your
+own constructor. In this example, we just bless reference. Note that
+your object should be blessed hash.
+
+  sub new { bless {}, shift }
 
 =item *
 
@@ -434,7 +436,7 @@ reference of parameters associated with the dispatcher.
 
 =item *
 
-Implement optional C<needs_reload> and C<parse>
+Implement optional C<needs_reload> and C<reload>
 methods. C<needs_reload> should return boolean value if the object is
 stale and needs reloading itself. This method will be triggered when
 you configure logging object with C<configure_and_watch> method.
@@ -448,14 +450,15 @@ on filesystem files, you do not need to reimplement this.
       return $obj->{ctime} < (stat($self->{file}))[9];
   }
 
-If you do not need I<singleton-ness at all>, always return true.
+If you do not need I<singleton-ness> at all, always return true.
 
   sub needs_reload { 1 }
 
-C<parse> method should do parsing of the config file. This method is
-called in the first parsing of the config file, and again when
-C<needs_reload> returns true. Log::Dispatch::Configurator base class
-has a null C<parse> method.
+C<reload> method should redo parsing of the config file. Configurator
+base class has a stub null C<reload> method, so you should better
+override it.
+
+See Log::Dispatch::Configurator::AppConfig source code for details.
 
 =item *
 

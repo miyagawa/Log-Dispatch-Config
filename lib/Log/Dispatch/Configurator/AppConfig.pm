@@ -2,13 +2,20 @@ package Log::Dispatch::Configurator::AppConfig;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = 0.11_03;
+$VERSION = 0.12;
 
 use Log::Dispatch::Configurator;
 use base qw(Log::Dispatch::Configurator);
 use AppConfig;
 
-sub parse {
+sub new {
+    my($class, $file) = @_;
+    my $self = bless { file => $file }, $class;
+    $self->parse_file;
+    return $self;
+}
+
+sub parse_file {
     my $self = shift;
     my $config = AppConfig->new({
 	CREATE => 1,
@@ -21,6 +28,11 @@ sub parse {
     $config->file($self->{file});
 
     $self->{_config} = $config;
+}
+
+sub reload {
+    my $self = shift;
+    $self->parse_file;
 }
 
 sub _config { $_[0]->{_config} }
