@@ -40,8 +40,13 @@ Log::Dispatch::Configurator - Abstract Configurator class
   package Log::Dispatch::Configurator::Foo;
   use base qw(Log::Dispatch::Configurator);
 
+  # should implement
   sub get_attrs_global { }
   sub get_attrs        { }
+
+  # optional
+  sub needs_reload { }
+  sub reload       { }
 
 =head1 DESCRIPTION
 
