@@ -24,21 +24,20 @@ sub new {
 
 sub _config { $_[0]->{_config} }
 
-sub global_format {
+sub get_attrs_global {
     my $self = shift;
-    return $self->_config->get('format');
+    return {
+	'format'    => scalar $self->_config->get('format'),
+	dispatchers => [ split /\s+/, $self->_config->get('dispatchers') ],
+    };
 }
 
-sub dispatchers {
-    my $self = shift;
-    return split /\s+/, $self->_config->get('dispatchers');
-}
-
-sub attrs {
+sub get_attrs {
     my($self, $name) = @_;
-    my %var = $self->_config->varlist("^$name\.");
+    my $regex = "^$name" . '[\._]';
+    my %var = $self->_config->varlist($regex);
     my %param = map {
-        (my $key = $_) =~ s/^$name\.//;
+        (my $key = $_) =~ s/$regex//;
         $key => $var{$_};
     } keys %var;
     return \%param;
@@ -81,7 +80,18 @@ of config file.
   screen.stderr = 1
   screen.format = %m
 
-See L<Log::Dispatch::Config> for details.
+You can use ini style grouping.
+
+  [file]
+  class = Log::Dispatch::File
+  min_level = debug
+
+  [screen]
+  class = Log::Dispatch::Screen
+  min_level = info
+
+If you use _ (underscore) in dispatcher name, something very B<bad>
+may happen. It is safe when you avoid doing so.
 
 =head1 AUTHOR
 

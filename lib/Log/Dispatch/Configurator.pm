@@ -25,9 +25,8 @@ sub _abstract_method {
     Carp::croak(shift, " is an abstract method of ", __PACKAGE__);
 }
 
-sub global_format { _abstract_method('global_format') }
-sub dispatchers   { _abstract_method('dispatchers') }
-sub attrs         { _abstract_method('attrs') }
+sub get_attrs_global { _abstract_method('get_attrs_global') }
+sub get_attrs        { _abstract_method('get_attrs') }
 
 1;
 __END__
@@ -41,9 +40,8 @@ Log::Dispatch::Configurator - Abstract Configurator class
   package Log::Dispatch::Configurator::Foo;
   use base qw(Log::Dispatch::Configurator);
 
-  sub global_format { }
-  sub dispatchers   { }
-  sub attrs         { }
+  sub get_attrs_global { }
+  sub get_attrs        { }
 
 =head1 DESCRIPTION
 

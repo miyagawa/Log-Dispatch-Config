@@ -65,11 +65,12 @@ sub reload {
 sub create_instance {
     my($class, $config) = @_;
 
-    my $callback = $class->format_to_cb($config->global_format, 3);
+    my $global = $config->get_attrs_global;
+    my $callback = $class->format_to_cb($global->{format}, 3);
     my %dispatchers;
-    foreach my $disp ($config->dispatchers) {
+    foreach my $disp (@{$global->{dispatchers}}) {
         $dispatchers{$disp} = $class->config_dispatcher(
-                $disp, $config->attrs($disp),
+                $disp, $config->get_attrs($disp),
 	    );
     }
     my %args;
@@ -216,8 +217,11 @@ Here is an example of the config file:
   screen.stderr = 1
   screen.format = %m
 
-In this example, config file is written in AppConfig format, see
-L</"PLUGGABLE CONFIGURATOR"> for other config parsing scheme.
+In this example, config file is written in AppConfig format. Using .
+ini style config file is also okay. See
+L<Log::Dispatch::Configurator::AppConfig> for the details.
+
+See L</"PLUGGABLE CONFIGURATOR"> for other config parsing scheme.
 
 =head2 GLOBAL PARAMETERS
 
@@ -245,7 +249,8 @@ C<format> defines log format. Possible conversions format are
   %n    newline (\n)
 
 Note that datetime (%d) format is configurable by passing C<strftime>
-fmt in braket after %d.
+fmt in braket after %d. (I know it looks quite messy, but its
+compatible with Java Log4j ;)
 
   format = [%d{%Y%m%d}] %m  # datetime is now strftime "%Y%m%d"
 
@@ -309,9 +314,9 @@ modified since its last object creation time.
 
 =head1 PLUGGABLE CONFIGURATOR
 
-If you pass filename to C<configure()> method call, this module
-handles the config file with AppConfig. You can change config parsing
-scheme by passing another pluggable configurator object.
+If you pass filename to C<configure> method call, this module handles
+the config file with AppConfig. You can change config parsing scheme
+by passing another pluggable configurator object.
 
 Here is a way to declare new configurator class. The example below is
 hardwired version equivalent to the one above in L</"CONFIGURATION">.
@@ -332,28 +337,24 @@ inherited, but you can roll your own with it.
 
 =item *
 
-Implement three required object methods C<global_format>,
-C<dispatchers>, C<attrs>.
+Implement two required object methods C<get_attrs_global> and
+C<get_attrs>.
 
-C<global_format> should return format string used in global
-parameters.
+C<get_attrs_global> should return hash reference of global parameters.
+C<dispatchers> should be an array reference of names of dispatchers.
 
-  sub global_format {
+  sub get_attrs_global {
       my $self = shift;
-      return undef;
+      return {
+          'format' => undef,
+          dispatchers => [ qw(file screen) ],
+      };
   }
 
-C<dispatchers> should return list of names of dispatchers.
+C<get_attes> accepts name of a dispatcher and should return hash
+reference of parameters associated with the dispatcher.
 
-  sub dispatchers {
-      my $self = shift;
-      return 'file', 'screen';
-  }
-
-C<attrs> should accept name of dispatcher, and return hash reference
-of parameters for the dispatcher.
-
-  sub attrs {
+  sub get_attrs {
       my($self, $name) = @_;
       if ($name eq 'file') {
           return {
@@ -363,7 +364,8 @@ of parameters for the dispatcher.
               mode      => 'append',
               'format'  => '[%d] [%p] %m at %F line %L%n',
           };
-      } elsif ($name eq 'screen') {
+      }
+      elsif ($name eq 'screen') {
           return {
 	      class     => 'Log::Dispatch::Screen',
 	      min_level => 'info',
@@ -371,15 +373,19 @@ of parameters for the dispatcher.
 	      'format'  => '%m',
 	  };
       }
+      else {
+	  die "invalid dispatcher name: $name";
+      }
   }
 
 =item *
 
 Implement optional C<needs_reload> and C<reload>
-method. C<needs_reload> should return boolean value if the object is
-stale and needs reloading itself.
+method. C<needs_reload> accepts Log::Dispatch::Config instance and
+should return boolean value if the object is stale and needs reloading
+itself.
 
-Stub confif file mtime based C<needs_reload> method is declared in
+Stub config file mtime based C<needs_reload> method is declared in
 Log::Dispatch::Configurator as below, so if your config class is based
 on filesystem files, you do not need to reimplement this.
 
@@ -388,10 +394,11 @@ on filesystem files, you do not need to reimplement this.
       return $obj->{ctime} < (stat($self->{file}))[9];
   }
 
-C<reload> method is called when C<needs_reload> returns
-true. Typically you should place configuration parsing again on
-C<reload> method, so Log::Dispatch::Configurator again declares stub
-C<reload> method that clones your object.
+C<reload> method is called when C<needs_reload> returns true, and
+should return new Configurator instance. Typically you should place
+configuration parsing again on this method, so
+Log::Dispatch::Configurator again declares stub C<reload> method that
+clones your object.
 
   sub reload {
       my $self = shift;
@@ -403,13 +410,13 @@ C<reload> method that clones your object.
 
 Thats all. Now you can plug your own configurator (Hardwired) into
 Log::Dispatch::Config. What you should do is to pass configurator
-object to C<config()> method call instead of config file name.
+object to C<configure> method call instead of config file name.
 
   use Log::Dispatch;
   use Log::Dispatch::Configurator::Hardwired;
 
   my $config = Log::Dispatch::Configurator::Hardwired->new;
-  Log::Dispatch::Config->confifure($config);
+  Log::Dispatch::Config->configure($config);
 
 =back
 

@@ -57,8 +57,12 @@ CONFIGURATION
       screen.stderr = 1
       screen.format = %m
 
-    In this example, config file is written in AppConfig format, see the
-    section on "PLUGGABLE CONFIGURATOR" for other config parsing scheme.
+    In this example, config file is written in AppConfig format. Using . ini
+    style config file is also okay. See the
+    Log::Dispatch::Configurator::AppConfig manpage for the details.
+
+    See the section on "PLUGGABLE CONFIGURATOR" for other config parsing
+    scheme.
 
   GLOBAL PARAMETERS
 
@@ -82,7 +86,8 @@ CONFIGURATION
           %n    newline (\n)
 
         Note that datetime (%d) format is configurable by passing "strftime"
-        fmt in braket after %d.
+        fmt in braket after %d. (I know it looks quite messy, but its
+        compatible with Java Log4j ;)
 
           format = [%d{%Y%m%d}] %m  # datetime is now strftime "%Y%m%d"
 
@@ -135,8 +140,8 @@ SINGLETON
     modified since its last object creation time.
 
 PLUGGABLE CONFIGURATOR
-    If you pass filename to "configure()" method call, this module handles
-    the config file with AppConfig. You can change config parsing scheme by
+    If you pass filename to "configure" method call, this module handles the
+    config file with AppConfig. You can change config parsing scheme by
     passing another pluggable configurator object.
 
     Here is a way to declare new configurator class. The example below is
@@ -153,28 +158,25 @@ PLUGGABLE CONFIGURATOR
               bless {}, shift;
           }
 
-    *   Implement three required object methods "global_format",
-        "dispatchers", "attrs".
+    *   Implement two required object methods "get_attrs_global" and
+        "get_attrs".
 
-        "global_format" should return format string used in global
-        parameters.
+        "get_attrs_global" should return hash reference of global
+        parameters. "dispatchers" should be an array reference of names of
+        dispatchers.
 
-          sub global_format {
+          sub get_attrs_global {
               my $self = shift;
-              return undef;
+              return {
+                  'format' => undef,
+                  dispatchers => [ qw(file screen) ],
+              };
           }
 
-        "dispatchers" should return list of names of dispatchers.
+        "get_attes" accepts name of a dispatcher and should return hash
+        reference of parameters associated with the dispatcher.
 
-          sub dispatchers {
-              my $self = shift;
-              return 'file', 'screen';
-          }
-
-        "attrs" should accept name of dispatcher, and return hash reference
-        of parameters for the dispatcher.
-
-          sub attrs {
+          sub get_attrs {
               my($self, $name) = @_;
               if ($name eq 'file') {
                   return {
@@ -184,7 +186,8 @@ PLUGGABLE CONFIGURATOR
                       mode      => 'append',
                       'format'  => '[%d] [%p] %m at %F line %L%n',
                   };
-              } elsif ($name eq 'screen') {
+              }
+              elsif ($name eq 'screen') {
                   return {
                       class     => 'Log::Dispatch::Screen',
                       min_level => 'info',
@@ -192,13 +195,17 @@ PLUGGABLE CONFIGURATOR
                       'format'  => '%m',
                   };
               }
+              else {
+                  die "invalid dispatcher name: $name";
+              }
           }
 
     *   Implement optional "needs_reload" and "reload" method.
-        "needs_reload" should return boolean value if the object is stale
-        and needs reloading itself.
+        "needs_reload" accepts Log::Dispatch::Config instance and should
+        return boolean value if the object is stale and needs reloading
+        itself.
 
-        Stub confif file mtime based "needs_reload" method is declared in
+        Stub config file mtime based "needs_reload" method is declared in
         Log::Dispatch::Configurator as below, so if your config class is
         based on filesystem files, you do not need to reimplement this.
 
@@ -207,10 +214,11 @@ PLUGGABLE CONFIGURATOR
               return $obj->{ctime} < (stat($self->{file}))[9];
           }
 
-        "reload" method is called when "needs_reload" returns true.
-        Typically you should place configuration parsing again on "reload"
-        method, so Log::Dispatch::Configurator again declares stub "reload"
-        method that clones your object.
+        "reload" method is called when "needs_reload" returns true, and
+        should return new Configurator instance. Typically you should place
+        configuration parsing again on this method, so
+        Log::Dispatch::Configurator again declares stub "reload" method that
+        clones your object.
 
           sub reload {
               my $self = shift;
@@ -220,13 +228,13 @@ PLUGGABLE CONFIGURATOR
 
     *   Thats all. Now you can plug your own configurator (Hardwired) into
         Log::Dispatch::Config. What you should do is to pass configurator
-        object to "config()" method call instead of config file name.
+        object to "configure" method call instead of config file name.
 
           use Log::Dispatch;
           use Log::Dispatch::Configurator::Hardwired;
 
           my $config = Log::Dispatch::Configurator::Hardwired->new;
-          Log::Dispatch::Config->confifure($config);
+          Log::Dispatch::Config->configure($config);
 
 TODO
     *   LogLevel configuration depending on caller package like log4j?

@@ -9,16 +9,15 @@ END { unlink 't/log.out' if -e 't/log.out' }
 
     sub new { bless {}, shift; }
 
-    sub global_format {
+    sub get_attrs_global {
 	my $self = shift;
-	return undef;
+	return {
+	    'format' => undef,
+	    dispatchers => [ qw(file screen) ],
+	};
     }
 
-    sub dispatchers {
-	return 'file', 'screen';
-    }
-
-    sub attrs {
+    sub get_attrs {
 	my($self, $name) = @_;
 	if ($name eq 'file') {
 	    return {

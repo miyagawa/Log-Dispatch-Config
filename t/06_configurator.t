@@ -13,6 +13,6 @@ Log::Dispatch::Config->configure($config);
 eval {
     my $disp = Log::Dispatch::Config->instance;
 };
-like $@, qr/global_format/, $@;
+like $@, qr/get_attrs_global is/, $@;
 
 
