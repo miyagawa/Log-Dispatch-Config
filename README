@@ -96,6 +96,9 @@ CONFIGURATION
         "format" defined here would apply to all the log messages to
         dispatchers. This parameter is optional.
 
+        See the section on "CALLER STACK" for details about package, line
+        number and filename.
+
   PARAMETERS FOR EACH DISPATCHER
 
     Parameters for each dispatcher should be prefixed with "name.", where
@@ -247,8 +250,32 @@ PLUGGABLE CONFIGURATOR
           my $config = Log::Dispatch::Configurator::Hardwired->new;
           Log::Dispatch::Config->configure($config);
 
-TODO
-    *   LogLevel configuration depending on caller package like log4j?
+CALLER STACK
+    When you call logging method from your subroutines / methods, caller
+    stack would increase and thus you can't see where the log really comes
+    from.
+
+      package Logger;
+      my $Logger = Log::Dispatch::Config->instance;
+
+      sub logit {
+          my($class, $level, $msg) = @_;
+          $Logger->$level($msg);
+      }
+
+      package main;
+      Logger->logit('debug', 'foobar');
+
+    You can adjust package variable $Log::Dispatch::Config::CallerDepth to
+    change the caller stack depth. The default value is 3, (which depends
+    heavily on Log::Dispatch's undocumented implementation. It might be
+    changed in future).
+
+      sub logit {
+          my($class, $level, $msg) = @_;
+          local $Log::Dispatch::Config::CallerDepth = 4;
+          $Logger->$level($msg);
+      }
 
 AUTHOR
     Tatsuhiko Miyagawa <miyagawa@bulknews.net> with much help from Matt
