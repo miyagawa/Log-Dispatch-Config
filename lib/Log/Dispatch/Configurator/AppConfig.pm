@@ -2,7 +2,7 @@ package Log::Dispatch::Configurator::AppConfig;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = 0.12;
+$VERSION = '1.00';
 
 use Log::Dispatch::Configurator;
 use base qw(Log::Dispatch::Configurator);

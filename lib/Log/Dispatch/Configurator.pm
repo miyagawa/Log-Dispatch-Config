@@ -2,7 +2,7 @@ package Log::Dispatch::Configurator;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = 0.12;
+$VERSION = '1.00';
 
 sub new {
     my($class, $file) = @_;

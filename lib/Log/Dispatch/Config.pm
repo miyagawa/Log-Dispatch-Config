@@ -2,11 +2,10 @@ package Log::Dispatch::Config;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = 0.12;
+$VERSION = '1.00';
 
-use Log::Dispatch;
+use Log::Dispatch 2.00;
 use base qw(Log::Dispatch);
-use fields qw(config);
 
 # caller depth: can be changed from outside
 $Log::Dispatch::Config::CallerDepth = 0;
