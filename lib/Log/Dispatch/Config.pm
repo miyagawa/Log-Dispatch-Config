@@ -2,14 +2,54 @@ package Log::Dispatch::Config;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.03';
+$VERSION = '0.04';
 
 use AppConfig qw(:argcount);
-use Log::Dispatch;
+use base qw(Log::Dispatch);
+use fields qw(filename ctime);
+
+use vars qw($_Instance);
+
+sub _croak { require Carp; Carp::croak(@_); }
+
+sub new {
+    my $class = shift;
+    return $class->SUPER::new(@_);
+}
 
 sub configure {
     my($class, $file) = @_;
     die "no config file supplied" unless $file;
+
+    # now keep $file as an instance, later we should make object
+    $_Instance = $file;
+}
+
+# backward compatibility
+sub Log::Dispatch::instance {
+    __PACKAGE__->instance;
+}
+
+sub instance {
+    my $class = shift;
+    unless (defined $_Instance) {
+	_croak "Log::Dispatch::Config->configure not yet called.";
+    }
+
+    # first time call: $_Instance is a filename
+    if (! ref $_Instance) {
+	$_Instance = $class->_create_instance($_Instance);
+    }
+    # reload singleton on the fly
+    elsif ($_Instance->{ctime} <= (stat($_Instance->{filename}))[9]) {
+	$_Instance = $class->_create_instance($_Instance->{filename});
+    }
+
+    return $_Instance;
+}
+
+sub _create_instance {
+    my($class, $file) = @_;
 
     my $config = AppConfig->new({
 	CREATE => 1,
@@ -21,46 +61,28 @@ sub configure {
     $config->define(format      => { DEFAULT => undef });
     $config->file($file);
 
-    *Log::Dispatch::instance = $class->make_closure($config, $file);
-}
+    my $callback = $class->format_to_cb($config->get('format'), 3);
+    my %dispatchers = $class->config_dispatchers($config);
 
-sub make_closure {
-    my($class, $config, $file) = @_;
+    my %args;
+    $args{callbacks} = $callback if defined $callback;
+    $_Instance = $class->new(%args);
 
-    my($instance, $ctime);
-    return sub {
-	my $dispclass = shift;
+    for my $dispname (keys %dispatchers) {
+	my $logclass = delete $dispatchers{$dispname}->{class};
+	$_Instance->add(
+	    $logclass->new(
+		name => $dispname,
+		%{$dispatchers{$dispname}},
+	    ),
+	);
+    }
 
-	# reload config, clear closure and refresh
-	if (defined $ctime && (stat($file))[9] > $ctime) {
-	    $class->configure($file);
-	    ($instance, $ctime) = (undef, undef);
-	    return $dispclass->instance;
-	}
+    # config info
+    $_Instance->{filename}  = $file;
+    $_Instance->{ctime} = time;
 
-	# create composit dispatcher
-	unless (defined $instance) {
-	    my $callback = $class->format_to_cb($config->get('format'), 3);
-	    my %dispatchers = $class->config_dispatchers($config);
-
-	    my %args;
-	    $args{callbacks} = $callback if defined $callback;
-	    $instance = $dispclass->new(%args);
-
-	    for my $dispname (keys %dispatchers) {
-		my $logclass = delete $dispatchers{$dispname}->{class};
-		$instance->add(
-		    $logclass->new(
-			name => $dispname,
-			%{$dispatchers{$dispname}},
-		    ),
-		);
-	    }
-	    $ctime = time;	# memorize creation time
-	}
-
-	return $instance;
-    };
+    return $_Instance;
 }
 
 sub config_dispatchers {
@@ -124,21 +146,38 @@ Log::Dispatch::Config - Log4j for Perl
   use Log::Dispatch::Config;
   Log::Dispatch::Config->configure('/path/to/config');
 
+  my $dispatcher = Log::Dispatch::Config->instance;
+
+  # or the same (may be deprecated)
   my $dispatcher = Log::Dispatch->instance;
 
 =head1 DESCRIPTION
 
-Log::Dispatch::Config provides a way to configure Log::Dispatch with
-configulation file (in AppConfig format). I mean, this is log4j for
-Perl, not with all API compatibility though.
+Log::Dispatch::Config is a subclass of Log::Dispatch and provides a
+way to configure Log::Dispatch object with configulation file (in
+AppConfig format). I mean, this is log4j for Perl, not with all API
+compatibility though.
 
 =head1 METHOD
 
-This module has one class method C<configure> which parses config file
-and declares C<instance> method in Log::Dispatch namespace. So what
-you should do is call C<configure> method once in somewhere (like
-C<startup.pl> in mod_perl), then you can get configured dispatcher
-instance via C<Log::Dispatch-E<gt>instance>.
+This module has a class method C<configure> which parses config file
+for later createion of the Log::Dispatch::Config singleton instance.
+(Actual construction of the object is done in the first C<instance>
+call).
+
+So, what you should do is call C<configure> method once in somewhere
+(like C<startup.pl> in mod_perl), then you can get configured
+dispatcher instance via C<Log::Dispatch::Config-E<gt>instance>.
+
+Formerly, C<configure> method declares C<instance> method in
+Log::Dispatch namespace. Now it inherits from Log::Dispatch, so the
+namespace pollution is not necessary. Currrent version still defines
+one-liner shortcut:
+
+  sub Log::Dispatch::instance { Log::Dispatch::Config->instance }
+
+so still you can call C<Log::Dispatch::Config-E<gt>instance>, if you
+prefer, or for backward compatibility.
 
 =head1 CONFIGURATION
 
@@ -228,12 +267,12 @@ construction. See Log::Dispatch::* manpage for the details.
 
 =head1 SINGLETON
 
-Declared C<instance> method would make C<Log::Dispatch> class
+Declared C<instance> method would make C<Log::Dispatch::Config> class
 singleton, so multiple calls of C<instance> will all result in
 returning same object.
 
-  my $one = Log::Dispatch->instance;
-  my $two = Log::Dispatch->instance; # same as $one
+  my $one = Log::Dispatch::Config->instance;
+  my $two = Log::Dispatch::Config->instance; # same as $one
 
 See GoF Design Pattern book for Singleton Pattern.
 
