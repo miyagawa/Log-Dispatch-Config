@@ -3,22 +3,12 @@ use Test::More tests => 3;
 
 use Log::Dispatch::Config;
 use FileHandle;
+use File::Copy;
 use File::Temp qw(tempfile);
 use IO::Scalar;
 
-sub writefile {
-    my $fh = FileHandle->new(">" . shift) or die $!;
-    $fh->print(@_);
-}
-
 my($fh, $file) = tempfile;
-writefile($file, <<'CFG');
-dispatchers=foo
-foo.class=Log::Dispatch::File
-foo.filename=/dev/null
-foo.min_level=debug
-CFG
-    ;
+copy("t/foo.cfg", $file);
 
 Log::Dispatch::Config->configure($file);
 
@@ -27,14 +17,7 @@ Log::Dispatch::Config->configure($file);
     isa_ok $disp->{outputs}->{foo}, 'Log::Dispatch::File';
 
     sleep 1;
-
-    writefile($file, <<'CFG');
-dispatchers=bar
-bar.class=Log::Dispatch::File
-bar.filename=/dev/null
-bar.min_level=debug
-CFG
-    ;
+    copy("t/bar.cfg", $file);
 
     local $^W;
     my $disp2 = Log::Dispatch::Config->instance;
