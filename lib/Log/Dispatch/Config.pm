@@ -10,13 +10,6 @@ use fields qw(filename ctime);
 
 use vars qw($_Instance);
 
-sub _croak { require Carp; Carp::croak(@_); }
-
-sub new {
-    my $class = shift;
-    return $class->SUPER::new(@_);
-}
-
 sub configure {
     my($class, $file) = @_;
     die "no config file supplied" unless $file;
@@ -33,7 +26,8 @@ sub Log::Dispatch::instance {
 sub instance {
     my $class = shift;
     unless (defined $_Instance) {
-	_croak "Log::Dispatch::Config->configure not yet called.";
+	require Carp;
+	Carp::croak("Log::Dispatch::Config->configure not yet called.");
     }
 
     # first time call: $_Instance is a filename
@@ -161,7 +155,7 @@ compatibility though.
 =head1 METHOD
 
 This module has a class method C<configure> which parses config file
-for later createion of the Log::Dispatch::Config singleton instance.
+for later creation of the Log::Dispatch::Config singleton instance.
 (Actual construction of the object is done in the first C<instance>
 call).
 
@@ -176,8 +170,8 @@ one-liner shortcut:
 
   sub Log::Dispatch::instance { Log::Dispatch::Config->instance }
 
-so still you can call C<Log::Dispatch::Config-E<gt>instance>, if you
-prefer, or for backward compatibility.
+so still you can call C<Log::Dispatch-E<gt>instance>, if you prefer,
+or for backward compatibility.
 
 =head1 CONFIGURATION
 

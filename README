@@ -18,7 +18,7 @@ DESCRIPTION
 
 METHOD
     This module has a class method `configure' which parses config file for
-    later createion of the Log::Dispatch::Config singleton instance. (Actual
+    later creation of the Log::Dispatch::Config singleton instance. (Actual
     construction of the object is done in the first `instance' call).
 
     So, what you should do is call `configure' method once in somewhere
@@ -32,8 +32,8 @@ METHOD
 
       sub Log::Dispatch::instance { Log::Dispatch::Config->instance }
 
-    so still you can call `Log::Dispatch::Config->instance', if you prefer,
-    or for backward compatibility.
+    so still you can call `Log::Dispatch->instance', if you prefer, or for
+    backward compatibility.
 
 CONFIGURATION
     Here is an example of the config file:
