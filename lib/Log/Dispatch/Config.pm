@@ -217,9 +217,8 @@ Here is an example of the config file:
   screen.stderr = 1
   screen.format = %m
 
-In this example, config file is written in AppConfig format. Using .
-ini style config file is also okay. See
-L<Log::Dispatch::Configurator::AppConfig> for the details.
+In this example, config file is written in AppConfig format. See
+L<Log::Dispatch::Configurator::AppConfig> for details.
 
 See L</"PLUGGABLE CONFIGURATOR"> for other config parsing scheme.
 
@@ -267,6 +266,14 @@ dispatchers. This parameter is B<optional>.
 Parameters for each dispatcher should be prefixed with "name.", where
 "name" is the name of each one, defined in global C<dispatchers>
 parameter.
+
+You can also use C<.ini> style grouping like:
+
+  [foo]
+  class = Log::Dispatch::File
+  min_level = debug
+
+See L<Log::Dispatch::Configurator::AppConfig> for details.
 
 =over 4
 
@@ -381,7 +388,7 @@ reference of parameters associated with the dispatcher.
 =item *
 
 Implement optional C<needs_reload> and C<reload>
-method. C<needs_reload> accepts Log::Dispatch::Config instance and
+methods. C<needs_reload> accepts Log::Dispatch::Config instance and
 should return boolean value if the object is stale and needs reloading
 itself.
 
@@ -393,6 +400,10 @@ on filesystem files, you do not need to reimplement this.
       my($self, $obj) = @_;
       return $obj->{ctime} < (stat($self->{file}))[9];
   }
+
+If you do not need I<singleton-ness>, always return true.
+
+  sub needs_reload { 1 }
 
 C<reload> method is called when C<needs_reload> returns true, and
 should return new Configurator instance. Typically you should place
@@ -408,7 +419,7 @@ clones your object.
 
 =item *
 
-Thats all. Now you can plug your own configurator (Hardwired) into
+That's all. Now you can plug your own configurator (Hardwired) into
 Log::Dispatch::Config. What you should do is to pass configurator
 object to C<configure> method call instead of config file name.
 

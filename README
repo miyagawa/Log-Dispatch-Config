@@ -57,9 +57,8 @@ CONFIGURATION
       screen.stderr = 1
       screen.format = %m
 
-    In this example, config file is written in AppConfig format. Using . ini
-    style config file is also okay. See the
-    Log::Dispatch::Configurator::AppConfig manpage for the details.
+    In this example, config file is written in AppConfig format. See the
+    Log::Dispatch::Configurator::AppConfig manpage for details.
 
     See the section on "PLUGGABLE CONFIGURATOR" for other config parsing
     scheme.
@@ -102,6 +101,14 @@ CONFIGURATION
     Parameters for each dispatcher should be prefixed with "name.", where
     "name" is the name of each one, defined in global "dispatchers"
     parameter.
+
+    You can also use ".ini" style grouping like:
+
+      [foo]
+      class = Log::Dispatch::File
+      min_level = debug
+
+    See the Log::Dispatch::Configurator::AppConfig manpage for details.
 
     class
           screen.class = Log::Dispatch::Screen
@@ -200,7 +207,7 @@ PLUGGABLE CONFIGURATOR
               }
           }
 
-    *   Implement optional "needs_reload" and "reload" method.
+    *   Implement optional "needs_reload" and "reload" methods.
         "needs_reload" accepts Log::Dispatch::Config instance and should
         return boolean value if the object is stale and needs reloading
         itself.
@@ -214,6 +221,10 @@ PLUGGABLE CONFIGURATOR
               return $obj->{ctime} < (stat($self->{file}))[9];
           }
 
+        If you do not need *singleton-ness*, always return true.
+
+          sub needs_reload { 1 }
+
         "reload" method is called when "needs_reload" returns true, and
         should return new Configurator instance. Typically you should place
         configuration parsing again on this method, so
@@ -226,7 +237,7 @@ PLUGGABLE CONFIGURATOR
               return $class->new($self->{file});
           }
 
-    *   Thats all. Now you can plug your own configurator (Hardwired) into
+    *   That's all. Now you can plug your own configurator (Hardwired) into
         Log::Dispatch::Config. What you should do is to pass configurator
         object to "configure" method call instead of config file name.
 
