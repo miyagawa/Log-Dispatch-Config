@@ -2,7 +2,7 @@ package Log::Dispatch::Config;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = 0.11_02;
+$VERSION = 0.11_03;
 
 use Log::Dispatch;
 use base qw(Log::Dispatch);
