@@ -1,5 +1,8 @@
 Revision history for Perl extension Log::Dispatch::Config.
 
+0.05  Thu Dec  6 19:05:11 JST 2001
+	- CVS glitches in Makefile.PL (replacement of the RCS keyword ..)
+
 0.04  Thu Dec  6 18:33:50 JST 2001
 	* --- API change (with backward compatibility) ---
 	  Whole architecture redesign: now inherits from Log::Dispatch.
