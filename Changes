@@ -1,5 +1,9 @@
 Revision history for Perl extension Log::Dispatch::Config.
 
+0.03  Tue Dec  4 11:33:15 JST 2001
+	- fixed 03_reload.t not to segfault
+	  (Thanks to Matt Sergeant <matt@sergeant.org>)
+
 0.02  Sun Nov 18 23:56:31 JST 2001
 	- fixed varlist() regex
 
