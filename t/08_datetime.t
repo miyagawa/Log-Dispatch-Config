@@ -11,7 +11,7 @@ isa_ok $disp->{outputs}->{screen}, 'Log::Dispatch::Screen';
 
 {
     my($mday, $mon, $year) = (localtime(time))[3..5];
-    my $today =  join '', $year + 1900, $mon + 1, $mday;
+    my $today = sprintf '%04s%02d%02d', $year + 1900, $mon + 1, $mday;
 
     tie *STDERR, 'IO::Scalar', \my $err;
     $disp->debug('debug');

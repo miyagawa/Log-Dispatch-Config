@@ -1,7 +1,11 @@
 Revision history for Perl extension Log::Dispatch::Config.
 
+0.10  Thu Jan  3 11:12:40 JST 2002
+	- Fixed Y2002 bug :( in t/08_datetime.t
+	  (Thanks to Matt Sergeant <matt@sergeant.org>)
+
 0.09  Thu Dec 27 15:01:12 JST 2001
-	- Fixed unnecessary quotes with 'format'
+	- Fixed unnecessary quotes with 'format' in pods
 	- Clean up format_to_cb code
 	- '%%' is replaced by '%'
 	* [API change] $CallerDepth defaults to 0
