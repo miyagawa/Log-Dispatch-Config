@@ -2,13 +2,12 @@ package Log::Dispatch::Config;
 
 use strict;
 use vars qw($VERSION);
-$VERSION = '0.05';
+$VERSION = '0.05_01';
 
+require Log::Dispatch;
 use base qw(Log::Dispatch);
 use fields qw(filename ctime);
 use vars qw($_Instance);
-
-use AppConfig qw(:argcount);
 
 sub configure {
     my($class, $file) = @_;
@@ -30,33 +29,43 @@ sub instance {
 	Carp::croak("Log::Dispatch::Config->configure not yet called.");
     }
 
-    # first time call: $_Instance is a filename
-    if (! ref $_Instance) {
-	$_Instance = $class->_create_instance($_Instance);
+    if (ref($_Instance) && UNIVERSAL::isa($_Instance, 'Log::Dispatch::Config')) {
+        # reload singleton on the fly
+        $_Instance = $_Instance->reload;
     }
-    # reload singleton on the fly
-    elsif ($_Instance->{ctime} <= (stat($_Instance->{filename}))[9]) {
-	$_Instance = $class->_create_instance($_Instance->{filename});
+    else {
+        # first time call: $_Instance is a filename or not L::D::C
+	$_Instance = $class->create_instance($_Instance);
     }
 
     return $_Instance;
 }
 
-sub _create_instance {
+sub reload {
+    my $self = shift;
+    my $class = ref($self);
+
+    my $new = $self;
+    if ($self->{ctime} <= (stat($self->{filename}))[9]) {
+	$new = $class->create_instance($self->{filename});
+    }
+
+    return $new;
+}
+
+sub create_instance {
     my($class, $file) = @_;
 
-    my $config = AppConfig->new({
-	CREATE => 1,
-	GLOBAL => {
-	    ARGCOUNT => ARGCOUNT_ONE,
-	},
-    });
-    $config->define(dispatchers => { DEFAULT => '' });
-    $config->define(format      => { DEFAULT => undef });
-    $config->file($file);
+    my $config = $class->get_config($file);
 
     my $callback = $class->format_to_cb($config->get('format'), 3);
-    my %dispatchers = $class->config_dispatchers($config);
+    my %dispatchers;
+    foreach my $disp (split /\s+/, $config->get('dispatchers')) {
+        $dispatchers{$disp} = $class->config_dispatcher(
+                $disp,
+                $config->varlist("^$disp\\."),
+	    );
+    }
 
     my %args;
     $args{callbacks} = $callback if defined $callback;
@@ -79,28 +88,41 @@ sub _create_instance {
     return $instance;
 }
 
-sub config_dispatchers {
-    my($class, $config) = @_;
-    my %dispatchers;
-    for my $disp (split /\s+/, $config->get('dispatchers')) {
-	my %var = $config->varlist("^$disp\.");
-	my %param = map {
-	    (my $key = $_) =~ s/^$disp\.//;
-	    $key => $var{$_};
-	} keys %var;
+sub get_config {
+    my ($class, $file) = @_;
 
-	my $dispclass = $param{class}
-	    or die "class param missing for $disp";
+    require AppConfig;
 
-	eval qq{require $dispclass};
-	die $@ if $@ && $@ !~ /locate/;
+    my $config = AppConfig->new({
+	CREATE => 1,
+	GLOBAL => {
+	    ARGCOUNT => AppConfig::ARGCOUNT_ONE(),
+	},
+    });
+    $config->define(dispatchers => { DEFAULT => '' });
+    $config->define(format      => { DEFAULT => undef });
+    $config->file($file);
 
-	if (exists $param{format}) {
-	    $param{callbacks} = $class->format_to_cb(delete $param{format}, 5);
-	}
-	$dispatchers{$disp} = \%param;
+    return $config;
+}
+
+sub config_dispatcher {
+    my($class, $disp, %var) = @_;
+    my %param = map {
+        (my $key = $_) =~ s/^$disp\.//;
+        $key => $var{$_};
+    } keys %var;
+
+    my $dispclass = $param{class}
+        or die "class param missing for $disp";
+
+    eval qq{require $dispclass};
+    die $@ if $@ && $@ !~ /locate/;
+
+    if (exists $param{format}) {
+        $param{callbacks} = $class->format_to_cb(delete $param{format}, 5);
     }
-    return %dispatchers;
+    return \%param;
 }
 
 sub format_to_cb {
@@ -274,6 +296,35 @@ But in practice, in persistent environment like mod_perl, Singleton
 instance is not so useful. Log::Dispatch::Config defines C<instance>
 method so that the object reloads itself when configuration file is
 modified since its last object creation time.
+
+=head1 SUBCLASSING
+
+Should you wish to use something other than AppConfig to configure
+your logging, you can subclass Log::Dispatch::Config. Then you
+will need to implement the following:
+
+=over 4
+
+=item *
+
+A C<get_config()> class method that returns an object from
+which to retrieve configuration information. Specifically this
+object must support two methods: C<$obj-E<lt>get('property')> and
+C<$obj-E<lt>varlist('^name\\.')>. See the AppConfig methods of
+the same name for implementation details. The C<get_config()>
+method will be passed whatever was passed into C<configure()>.
+
+=item *
+
+Possibly a reload() method which returns $self if the class does
+not need to be reloaded, or a new object (usually created via
+a class method call to C<create_instance()>). The "thing" you
+passed to C<configure()> will be stored in $self->{filename}.
+
+Note that you do not need to implement this if your config class
+is based on filesystem files.
+
+=back
 
 =head1 TODO
 

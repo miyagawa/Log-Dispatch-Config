@@ -1,5 +1,9 @@
 Revision history for Perl extension Log::Dispatch::Config.
 
+0.06
+	* A lot of code rewrite for Alternate Config selection
+	  (Thanks to Matt Sergeant <matt@sergeant.org>)
+
 0.05  Thu Dec  6 19:05:11 JST 2001
 	- CVS glitches in Makefile.PL (replacement of the RCS keyword ..)
 
