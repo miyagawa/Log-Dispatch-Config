@@ -5,7 +5,6 @@ Revision history for Perl extension Log::Dispatch::Config.
 	  No check on config mtime by default
 	  New class method: configure_and_watch()
 	  (Thanks to Hiroyuki Oyama <oyama@cpan.org>)
-	* Added Log::Dispatch::Config::Category utils for namespace collision
 	- Modified configurator API
 
 This release is a beta release. If you have trouble with this API
