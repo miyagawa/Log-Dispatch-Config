@@ -17,13 +17,15 @@ END   { unlink $log if -e $log }
 
 Log::Dispatch::Config->configure('t/log.cfg');
 
-tie *STDERR, 'IO::Scalar', \my $err;
+my $err;
+{
+    tie *STDERR, 'IO::Scalar', \$err;
 
-my $disp = Log::Dispatch::Config->instance;
-$disp->debug('debug');
-$disp->alert('alert');
+    my $disp = Log::Dispatch::Config->instance;
+    $disp->debug('debug');
+    $disp->alert('alert');
+}
 
-untie *STDERR;
 
 my $file = slurp $log;
 like $file, qr(debug at t/02_log\.t), 'debug';

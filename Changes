@@ -1,5 +1,8 @@
 Revision history for Perl extension Log::Dispatch::Config.
 
+1.01  Tue Apr 30 14:06:06 JST 2002
+	- remove untie() to shut up bleadperl
+
 1.00  Fri Apr 12 03:20:40 JST 2002
 	- Fixed doc
 	- Code cleanup (refactoring, s/die/croak/g etc.)

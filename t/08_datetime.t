@@ -15,7 +15,6 @@ isa_ok $disp->{outputs}->{screen}, 'Log::Dispatch::Screen';
 
     tie *STDERR, 'IO::Scalar', \my $err;
     $disp->debug('debug');
-    untie *STDERR;
 
     like $err, qr/$today/, $err;
     like $err, qr/debug/, $err;
