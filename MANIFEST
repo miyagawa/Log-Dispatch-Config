@@ -1,0 +1,11 @@
+Changes
+MANIFEST
+Makefile.PL
+README
+lib/Log/Dispatch/Config.pm
+t/00_compile.t
+t/01_configure.t
+t/02_log.t
+t/03_reload.t
+t/04_nolog.t
+t/log.cfg

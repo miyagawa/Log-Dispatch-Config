@@ -1,0 +1,118 @@
+NAME
+    Log::Dispatch::Config - Log4j for Perl
+
+SYNOPSIS
+      use Log::Dispatch::Config;
+      Log::Dispatch::Config->configure('/path/to/config');
+
+      my $dispatcher = Log::Dispatch->instance;
+
+DESCRIPTION
+    Log::Dispatch::Config provides a way to configure Log::Dispatch with
+    configulation file (in AppConfig format). I mean, this is log4j for Perl,
+    not with all API compatibility though.
+
+METHOD
+    This module has one class method `configure' which parses config file and
+    declares `instance' method in Log::Dispatch namespace. So what you should
+    do is call `configure' method once in somewhere (like `startup.pl' in
+    mod_perl), then you can get configured dispatcher instance via
+    `Log::Dispatch->instance'.
+
+CONFIGURATION
+    Here is an example of the config file:
+
+      dispatchers = file screen
+
+      file.class = Log::Dispatch::File
+      file.min_level = debug
+      file.filename = /path/to/log
+      file.mode = append
+      file.format = [%d] [%p] %m at %F line %L%n
+
+      screen.class = Log::Dispatch::Screen
+      screen.min_level = info
+      screen.stderr = 1
+      screen.format = %m
+
+    Config file is parsed with AppConfig module, see the AppConfig manpage
+    when you face configuration parsing error.
+
+  GLOBAL PARAMETERS
+
+    dispatchers
+          dispatchers = file screen
+
+        `dispatchers' defines logger names, which will be splitted by spaces.
+        If this parameter is unset, no logging is done.
+
+    format
+          format = [%d] [%p] %m at %F line %L%n
+          format = [${datetime}] [${prioity}] ${message} at ${filename} line ${line}\n
+
+        `format' defines log format. `%X' style and `${XXX}' style are both
+        supported. Possible conversions format are
+
+          %d ${datetime}        datetime string
+          %p ${priority}        priority (debug, indo, warn ...)
+          %m ${message}         message string
+          %F ${filename}        filename
+          %L ${line}            line number
+          %P ${package}         package
+          %n                    newline (\n)
+
+        `format' defined here would apply to all the log messages to
+        dispatchers. This parameter is optional.
+
+  PARAMETERS FOR EACH DISPATCHER
+
+    Parameters for each dispatcher should be prefixed with "name.", where
+    "name" is the name of each one, defined in global `dispatchers' parameter.
+
+    class
+          screen.class = Log::Dispatch::Screen
+
+        `class' defines class name of Log::Dispatch subclasses. This parameter
+        is essential.
+
+    format
+          screen.format = -- %m --
+
+        `format' defines log format which would be applied only to the
+        dispatcher. Note that if you define global `format' also, `%m' is
+        double formated (first global one, next each dispatcher one). This
+        parameter is optional.
+
+    (others)
+          screen.min_level = info
+          screen.stderr = 1
+
+        Other parameters would be passed to the each dispatcher construction.
+        See Log::Dispatch::* manpage for the details.
+
+SINGLETON
+    Declared `instance' method would make `Log::Dispatch' class singleton, so
+    multiple calls of `instance' will all result in returning same object.
+
+      my $one = Log::Dispatch->instance;
+      my $two = Log::Dispatch->instance; # same as $one
+
+    See GoF Design Pattern book for Singleton Pattern.
+
+    But in practice, in persistent environment like mod_perl, Singleton
+    instance is not so useful. Log::Dispatch::Config defines `instance' method
+    so that the object reloads itself when configuration file is modified
+    since its last object creation time.
+
+TODO
+    *   LogLevel configuration depending on caller package like log4j?
+
+AUTHOR
+    Tatsuhiko Miyagawa <miyagawa@bulknews.net>
+
+    This library is free software; you can redistribute it and/or modify it
+    under the same terms as Perl itself.
+
+SEE ALSO
+    the Log::Dispatch manpage, the AppConfig manpage
+
