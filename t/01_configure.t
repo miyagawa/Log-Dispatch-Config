@@ -1,5 +1,5 @@
 use strict;
-use Test::More 'no_plan';
+use Test::More tests => 3;
 
 use Log::Dispatch::Config;
 Log::Dispatch::Config->configure('t/log.cfg');

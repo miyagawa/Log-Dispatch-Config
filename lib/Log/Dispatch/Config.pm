@@ -67,7 +67,7 @@ sub config_dispatchers {
     my($class, $config) = @_;
     my %dispatchers;
     for my $disp (split /\s+/, $config->get('dispatchers')) {
-	my %var = $config->varlist("$disp.");
+	my %var = $config->varlist("^$disp\.");
 	my %param = map {
 	    (my $key = $_) =~ s/^$disp\.//;
 	    $key => $var{$_};
@@ -180,7 +180,7 @@ C<format> defines log format. C<%X> style and C<${XXX}> style are both
 supported. Possible conversions format are
 
   %d ${datetime}	datetime string
-  %p ${priority}	priority (debug, indo, warn ...)
+  %p ${priority}	priority (debug, info, warning ...)
   %m ${message}		message string
   %F ${filename}	filename
   %L ${line}		line number
