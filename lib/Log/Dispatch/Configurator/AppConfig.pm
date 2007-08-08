@@ -9,24 +9,37 @@ use base qw(Log::Dispatch::Configurator);
 use AppConfig;
 
 sub new {
-    my($class, $file) = @_;
-    my $self = bless { file => $file }, $class;
+    my($class, $file, $section) = @_;
+    my $self = bless { section => ($section ? "${section}_" : '') }, $class;
+    if(ref $file && $file->isa('AppConfig')){
+	$self->{config} = $file;
+    }else{
+	$self->{file}   = $file;
+    }
     $self->parse_file;
     return $self;
 }
 
 sub parse_file {
     my $self = shift;
-    my $config = AppConfig->new({
+
+    my $section = $self->{section};
+    my $config;
+    if($self->{config}){
+	$config = $self->{config};
+    }
+    else{ 
+	$config = AppConfig->new({
 	CREATE => 1,
 	GLOBAL => {
 	    ARGCOUNT => AppConfig::ARGCOUNT_ONE(),
 	},
     });
-    $config->define(dispatchers => { DEFAULT => '' });
-    $config->define(format      => { DEFAULT => undef });
-    $config->file($self->{file});
-
+	$config->file($self->{file});
+    }
+    $config->define("${section}dispatchers" => { DEFAULT => '' })    unless $config->varlist("^${section}dispatchers\$");
+    $config->define("${section}format"      => { DEFAULT => undef }) unless $config->varlist("^${section}format\$");
+    
     $self->{_config} = $config;
 }
 
@@ -39,15 +52,17 @@ sub _config { $_[0]->{_config} }
 
 sub get_attrs_global {
     my $self = shift;
+    my $section = $self->{section};
     return {
-	format      => scalar $self->_config->get('format'),
-	dispatchers => [ split /\s+/, $self->_config->get('dispatchers') ],
+	format      => scalar $self->_config->get("${section}format"),
+	dispatchers => [ split /\s+/, $self->_config->get("${section}dispatchers") ],
     };
 }
 
 sub get_attrs {
     my($self, $name) = @_;
-    my $regex = "^$name" . '[\._]';
+    my $section = $self->{section};
+    my $regex = "^$section$name" . '[\._]';
     my %var = $self->_config->varlist($regex);
     my %param = map {
         (my $key = $_) =~ s/$regex//;

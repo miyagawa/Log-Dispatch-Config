@@ -20,9 +20,11 @@ t/11_no_watch.t
 t/12_inherit.t
 t/13_do_reload.t
 t/14_destroy.t
+t/15_appconfig.t
 t/another.cfg
 t/bar.cfg
 t/date.cfg
 t/foo.cfg
 t/log.cfg
 t/log.ini
+t/section.ini
