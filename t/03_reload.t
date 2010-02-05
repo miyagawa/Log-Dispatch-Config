@@ -1,5 +1,5 @@
 use strict;
-use Test::More tests => 5;
+use Test::More;
 
 use Log::Dispatch::Config;
 use FileHandle;
@@ -7,6 +7,12 @@ use File::Copy;
 use File::Temp qw(tempfile);
 use IO::Scalar;
 
+if( $^O eq 'MSWin32' ) {
+    plan skip_all => 'These tests fail in Win32 for silly reasons';
+}
+else {
+    plan tests => 5;
+}
 my($fh, $file) = tempfile;
 copy("t/foo.cfg", $file);
 

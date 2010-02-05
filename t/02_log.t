@@ -4,6 +4,7 @@ use Test::More tests => 4;
 use Log::Dispatch::Config;
 use FileHandle;
 use IO::Scalar;
+use File::Spec;
 
 sub slurp {
     my $fh = FileHandle->new(shift) or die $!;
@@ -26,10 +27,10 @@ my $err;
     $disp->alert('alert');
 }
 
-
+my $filename = File::Spec->catfile('t', '02_log.t');
 my $file = slurp $log;
-like $file, qr(debug at t/02_log\.t), 'debug';
-like $file, qr(alert at t/02_log\.t), 'alert';
+like $file, qr(debug at \Q$filename\E), 'debug';
+like $file, qr(alert at \Q$filename\E), 'alert';
 
 ok $err !~ qr/debug/, 'no debug';
 is $err, "alert %", 'alert %';
