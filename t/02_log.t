@@ -27,7 +27,7 @@ my $err;
     $disp->alert('alert');
 }
 
-my $filename = File::Spec->catfile('t', '02_log.t');
+my $filename = __FILE__;
 my $file = slurp $log;
 like $file, qr(debug at \Q$filename\E), 'debug';
 like $file, qr(alert at \Q$filename\E), 'alert';

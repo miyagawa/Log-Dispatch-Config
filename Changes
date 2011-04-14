@@ -1,5 +1,8 @@
 Revision history for Perl extension Log::Dispatch::Config.
 
+1.04  Thu Apr 14 14:55:20 PDT 2011
+        - Fix 02_log.t RT:62438
+
 1.03  Thu Feb  4 21:05:21 PST 2010
         - Make tests pass on win32 (frew)
 
